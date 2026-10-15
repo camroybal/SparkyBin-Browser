@@ -31,6 +31,16 @@ void         ephy_web_extension_api_menus_handler                    (EphyWebExt
                                                                       JsonArray              *args,
                                                                       GTask                  *task);
 
+/* Commands that a menu item may trigger instead of notifying the extension. */
+typedef enum {
+  EPHY_MENU_COMMAND_NONE,
+  EPHY_MENU_COMMAND_BROWSER_ACTION,
+  EPHY_MENU_COMMAND_PAGE_ACTION,
+} EphyMenuCommand;
+
+void         ephy_web_extension_api_menus_activate_command         (EphyWebExtension      *web_extension,
+                                                                     int                   command);
+
 WebKitContextMenuItem  *ephy_web_extension_api_menus_create_context_menu        (EphyWebExtension    *self,
                                                                                  WebKitWebView       *web_view,
                                                                                  WebKitContextMenu   *context_menu,

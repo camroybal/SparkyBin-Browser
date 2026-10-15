@@ -442,7 +442,7 @@ static GActionEntry app_entries[] = {
   { "show-downloads", show_downloads, NULL, NULL, NULL },
   { "launch-app", launch_app, "s", NULL, NULL },
   { "webextension-notification", webextension_action, "(ssi)", NULL, NULL },
-  { "webextension-context-menu", webextension_context_menu_action, "(sss)", NULL, NULL },
+  { "webextension-context-menu", webextension_context_menu_action, "(ssiu)", NULL, NULL },
   { "close-all-tabs", close_all_tabs, NULL, NULL, NULL },
 };
 

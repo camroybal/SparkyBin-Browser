@@ -314,6 +314,13 @@ cookies_handler_set (EphyWebExtensionSender *sender,
                                 domain ? domain : g_uri_get_host (parsed_uri),
                                 path ? path : g_uri_get_path (parsed_uri),
                                 -1);
+  /* soup_cookie_new() returns NULL when the domain is not a valid cookie domain, which is the
+   * case for a URI without a host such as about:blank or data:. */
+  if (!new_cookie) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "cookies.set(): '%s' has no valid cookie domain", url);
+    return;
+  }
+
   soup_cookie_set_secure (new_cookie, secure);
   soup_cookie_set_http_only (new_cookie, http_only);
   soup_cookie_set_same_site_policy (new_cookie, string_to_samesite (same_site_str));

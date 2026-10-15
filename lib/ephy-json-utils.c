@@ -401,3 +401,27 @@ ephy_json_object_get_string_array (JsonObject *object,
 
   return strings;
 }
+
+/**
+ * ephy_json_quote_string:
+ * @value: (nullable): a UTF-8 string
+ *
+ * Encodes @value as a JSON string literal, including the surrounding double quotes and with
+ * all characters that cannot appear literally escaped. This is meant for building API
+ * responses with g_strdup_printf(), where interpolating an extension supplied string
+ * directly would corrupt the response.
+ *
+ * Returns: (transfer full): a newly allocated JSON string literal.
+ */
+char *
+ephy_json_quote_string (const char *value)
+{
+  g_autoptr (JsonBuilder) builder = NULL;
+  g_autoptr (JsonNode) node = NULL;
+
+  builder = json_builder_new ();
+  json_builder_add_string_value (builder, value ? value : "");
+  node = json_builder_get_root (builder);
+
+  return json_to_string (node, FALSE);
+}

@@ -47,6 +47,7 @@
 #include "ephy-embed-utils.h"
 #include "ephy-file-helpers.h"
 #include "ephy-header-bar.h"
+#include "ephy-json-utils.h"
 #include "ephy-location-entry.h"
 #include "ephy-notification.h"
 #include "ephy-output-encoding.h"
@@ -189,15 +190,43 @@ ephy_web_extension_manager_get_extension_by_guid (EphyWebExtensionManager *self,
   return NULL;
 }
 
+/* Holds a reference to the manager for the duration of an async extension operation. The GFile
+ * and GTask ready callbacks take a bare user data pointer, so without this the manager could be
+ * finalized while a scan or install is still in flight and the callback would then dereference
+ * freed memory. */
+typedef struct {
+  EphyWebExtensionManager *manager;
+} EphyExtensionLoadData;
+
+static EphyExtensionLoadData *
+extension_load_data_new (EphyWebExtensionManager *manager)
+{
+  EphyExtensionLoadData *data = g_new (EphyExtensionLoadData, 1);
+
+  data->manager = g_object_ref (manager);
+
+  return data;
+}
+
+static void
+extension_load_data_free (EphyExtensionLoadData *data)
+{
+  g_clear_object (&data->manager);
+  g_free (data);
+}
+
+G_DEFINE_AUTOPTR_CLEANUP_FUNC (EphyExtensionLoadData, extension_load_data_free)
+
 static void
 on_web_extension_loaded (GObject      *source_object,
                          GAsyncResult *result,
                          gpointer      user_data)
 {
+  g_autoptr (EphyExtensionLoadData) load_data = user_data;
+  EphyWebExtensionManager *self = load_data->manager;
   GFile *target = G_FILE (source_object);
   g_autoptr (GError) error = NULL;
   g_autoptr (EphyWebExtension) web_extension = NULL;
-  EphyWebExtensionManager *self = EPHY_WEB_EXTENSION_MANAGER (user_data);
 
   web_extension = ephy_web_extension_load_finished (source_object, result, &error);
   if (!web_extension) {
@@ -216,7 +245,8 @@ scan_directory_ready_cb (GFile        *file,
                          GAsyncResult *result,
                          gpointer      user_data)
 {
-  EphyWebExtensionManager *self = user_data;
+  g_autoptr (EphyExtensionLoadData) load_data = user_data;
+  EphyWebExtensionManager *self = load_data->manager;
   g_autoptr (GError) error = NULL;
   g_autoptr (GFileEnumerator) enumerator = NULL;
 
@@ -239,7 +269,7 @@ scan_directory_ready_cb (GFile        *file,
     if (!info)
       break;
 
-    ephy_web_extension_load_async (child, info, self->cancellable, on_web_extension_loaded, self);
+    ephy_web_extension_load_async (child, info, self->cancellable, on_web_extension_loaded, extension_load_data_new (self));
   }
 }
 
@@ -255,7 +285,7 @@ ephy_web_extension_manager_scan_directory_async (EphyWebExtensionManager *self,
                                    G_PRIORITY_DEFAULT,
                                    self->cancellable,
                                    (GAsyncReadyCallback)scan_directory_ready_cb,
-                                   self);
+                                   extension_load_data_new (self));
 }
 
 static void
@@ -475,9 +505,10 @@ on_new_web_extension_loaded (GObject      *source_object,
                              GAsyncResult *result,
                              gpointer      user_data)
 {
+  g_autoptr (EphyExtensionLoadData) load_data = user_data;
+  EphyWebExtensionManager *self = load_data->manager;
   g_autoptr (GError) error = NULL;
   EphyWebExtension *web_extension;
-  EphyWebExtensionManager *self = EPHY_WEB_EXTENSION_MANAGER (user_data);
 
   web_extension = ephy_web_extension_load_finished (source_object, result, &error);
   if (!web_extension) {
@@ -500,7 +531,8 @@ on_extension_decompressed (GObject      *source,
                            GAsyncResult *res,
                            gpointer      user_data)
 {
-  EphyWebExtensionManager *self = EPHY_WEB_EXTENSION_MANAGER (user_data);
+  g_autoptr (EphyExtensionLoadData) load_data = user_data;
+  EphyWebExtensionManager *self = load_data->manager;
   g_autoptr (GError) error = NULL;
   g_autoptr (GFile) target = NULL;
   GFileInfo *file_info;
@@ -519,7 +551,7 @@ on_extension_decompressed (GObject      *source,
     return;
   }
 
-  ephy_web_extension_load_async (g_steal_pointer (&target), file_info, self->cancellable, on_new_web_extension_loaded, self);
+  ephy_web_extension_load_async (g_steal_pointer (&target), file_info, self->cancellable, on_new_web_extension_loaded, extension_load_data_new (self));
 }
 
 static int
@@ -691,7 +723,7 @@ ephy_web_extension_manager_install (EphyWebExtensionManager *self,
   /* FIXME: Make this async. */
 
   if (is_xpi) {
-    decompress_xpi (file, web_extensions_dir, self->cancellable, on_extension_decompressed, self);
+    decompress_xpi (file, web_extensions_dir, self->cancellable, on_extension_decompressed, extension_load_data_new (self));
   } else {
     /* Otherwise we copy the parent directory. */
     g_autoptr (GFile) parent = g_file_get_parent (file);
@@ -707,9 +739,35 @@ ephy_web_extension_manager_install (EphyWebExtensionManager *self,
         return;
       }
 
-      ephy_web_extension_load_async (g_steal_pointer (&target), file_info, self->cancellable, on_new_web_extension_loaded, self);
+      ephy_web_extension_load_async (g_steal_pointer (&target), file_info, self->cancellable, on_new_web_extension_loaded, extension_load_data_new (self));
     }
   }
+}
+
+/* Release everything the manager still tracks for an extension that is going away. In-flight
+ * messages must be completed here, otherwise the promise that requested them would never
+ * settle and the GTask would be leaked with it. */
+static void
+discard_web_extension_state (EphyWebExtensionManager *self,
+                             EphyWebExtension        *web_extension)
+{
+  g_autoptr (GHashTable) pending_messages = NULL;
+
+  g_return_if_fail (EPHY_IS_WEB_EXTENSION_MANAGER (self));
+  g_return_if_fail (EPHY_IS_WEB_EXTENSION (web_extension));
+
+  if (g_hash_table_steal_extended (self->pending_messages, web_extension, NULL, (gpointer *)&pending_messages)) {
+    GHashTableIter iter;
+    GTask *task;
+
+    /* The table is already detached from the manager, so completing a task cannot find its
+     * own entry again. */
+    g_hash_table_iter_init (&iter, pending_messages);
+    while (g_hash_table_iter_next (&iter, NULL, (gpointer *)&task))
+      g_task_return_pointer (task, NULL, NULL);
+  }
+
+  g_hash_table_remove (self->popup_web_views, web_extension);
 }
 
 void
@@ -718,6 +776,8 @@ ephy_web_extension_manager_uninstall (EphyWebExtensionManager *self,
 {
   if (ephy_web_extension_manager_is_active (self, web_extension))
     ephy_web_extension_manager_set_active (self, web_extension, FALSE);
+
+  discard_web_extension_state (self, web_extension);
 
   ephy_web_extension_remove (web_extension);
   ephy_web_extension_manager_remove_from_list (self, web_extension);
@@ -1407,7 +1467,9 @@ on_popup_view_destroyed (GtkWidget *widget,
   EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
   GPtrArray *popup_views = g_hash_table_lookup (manager->popup_web_views, web_extension);
 
-  g_assert (g_ptr_array_remove_fast (popup_views, widget));
+  /* The entry is dropped when the extension is disabled or removed, so it may already be gone. */
+  if (popup_views && !g_ptr_array_remove_fast (popup_views, widget))
+    g_warning ("Unknown popup view of extension");
 }
 
 static void
@@ -1754,6 +1816,16 @@ ephy_web_extension_manager_set_active (EphyWebExtensionManager *self,
   gboolean found;
   guint idx;
 
+  /* Activating an extension that is already set up would connect the shell signals, register
+   * its actions and add it to every window once more. */
+  if (active) {
+    if (g_object_get_data (G_OBJECT (web_extension), "webextension-setup"))
+      return;
+    g_object_set_data (G_OBJECT (web_extension), "webextension-setup", GINT_TO_POINTER (TRUE));
+  } else {
+    g_object_set_data (G_OBJECT (web_extension), "webextension-setup", NULL);
+  }
+
   /* Update settings */
   found = g_ptr_array_find_with_equal_func (array, name, extension_equal, &idx);
   if (active) {
@@ -1795,6 +1867,9 @@ ephy_web_extension_manager_set_active (EphyWebExtensionManager *self,
     ephy_web_extension_api_commands_init (web_extension);
   } else {
     g_signal_handlers_disconnect_by_data (shell, web_extension);
+
+    /* Nothing may outlive a disabled extension. */
+    discard_web_extension_state (self, web_extension);
 
     remove_browser_action (self, web_extension);
     g_hash_table_remove (self->background_web_views, web_extension);
@@ -1852,10 +1927,14 @@ ephy_web_extension_manager_handle_notifications_action (EphyWebExtensionManager 
     return;
 
   if (index == -1) {
-    json = g_strdup_printf ("\"%s\"", notification_id);
+    g_autofree char *quoted_id = ephy_json_quote_string (notification_id);
+
+    json = g_strdup_printf ("%s", quoted_id);
     ephy_web_extension_manager_emit_in_extension_views (self, web_extension, "notifications.onClicked", json);
   } else {
-    json = g_strdup_printf ("\"%s\", %d", notification_id, index);
+    g_autofree char *quoted_id = ephy_json_quote_string (notification_id);
+
+    json = g_strdup_printf ("%s, %d", quoted_id, index);
     ephy_web_extension_manager_emit_in_extension_views (self, web_extension, "notifications.onButtonClicked", json);
   }
 }
@@ -1868,13 +1947,20 @@ ephy_web_extension_manager_handle_context_menu_action (EphyWebExtensionManager *
   const char *extension_guid;
   const char *onclickdata;
   const char *tabdata;
+  int command;
   g_autofree char *json = NULL;
 
-  g_variant_get (params, "(&s&s&s)", &extension_guid, &onclickdata, &tabdata);
+  g_variant_get (params, "(&s&siu)", &extension_guid, &onclickdata, &tabdata, &command);
 
   web_extension = ephy_web_extension_manager_get_extension_by_guid (self, extension_guid);
   if (!web_extension)
     return;
+
+  /* A command item triggers the extension's own UI instead of being reported back to it. */
+  if (command != EPHY_MENU_COMMAND_NONE) {
+    ephy_web_extension_api_menus_activate_command (web_extension, command);
+    return;
+  }
 
   json = g_strconcat (onclickdata, ", ", tabdata, NULL);
   ephy_web_extension_manager_emit_in_extension_views (self, web_extension, "menus.onClicked", json);
@@ -1886,9 +1972,12 @@ handle_message_reply (EphyWebExtension *web_extension,
 {
   EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
   GHashTable *pending_messages = g_hash_table_lookup (manager->pending_messages, web_extension);
-  GTask *pending_task;
   const char *message_guid;
+  GTask *pending_task;
   JsonNode *reply;
+
+  if (!pending_messages)
+    return;
 
   message_guid = ephy_json_array_get_string (args, 0);
   if (!message_guid) {
@@ -1901,7 +1990,9 @@ handle_message_reply (EphyWebExtension *web_extension,
     g_debug ("Received message not found in pending replies");
     return;
   }
-  g_hash_table_steal (pending_messages, message_guid);
+
+  /* Removing the entry releases the GUID, which is owned by the table. */
+  g_hash_table_remove (pending_messages, message_guid);
 
   reply = ephy_json_array_get_element (args, 1);
   g_task_return_pointer (pending_task, reply ? json_to_string (reply, FALSE) : NULL, g_free);

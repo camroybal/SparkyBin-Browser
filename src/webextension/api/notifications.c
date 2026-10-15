@@ -23,6 +23,7 @@
 #include "notifications.h"
 
 #include "api-utils.h"
+#include "ephy-json-utils.h"
 #include "ephy-shell.h"
 #include "ephy-web-extension.h"
 
@@ -94,7 +95,7 @@ notifications_handler_create (EphyWebExtensionSender *sender,
   namespaced_id = create_extension_notification_id (sender->extension, id);
   g_application_send_notification (G_APPLICATION (ephy_shell_get_default ()), namespaced_id, notification);
 
-  g_task_return_pointer (task, g_strdup_printf ("\"%s\"", id), g_free);
+  g_task_return_pointer (task, ephy_json_quote_string (id), g_free);
 }
 
 static void

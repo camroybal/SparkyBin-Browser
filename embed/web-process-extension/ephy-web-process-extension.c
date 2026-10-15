@@ -916,19 +916,25 @@ static JSCValue *
 ephy_get_view_objects (gpointer user_data)
 {
   EphyWebProcessExtension *extension = EPHY_WEB_PROCESS_EXTENSION (user_data);
-  g_autoptr (GPtrArray) window_objects = g_ptr_array_new ();
+  JSCContext *caller_context = jsc_context_get_current ();
+  g_autoptr (GPtrArray) window_objects = g_ptr_array_new_with_free_func (g_object_unref);
   GHashTableIter iter;
   JSCContext *context;
 
   g_hash_table_iter_init (&iter, extension->view_contexts);
   while (g_hash_table_iter_next (&iter, NULL, (gpointer *)&context)) {
+    /* JSC does not allow a value from one realm to be used in another, so only views in the
+     * caller's own context may be returned. */
+    if (context != caller_context)
+      continue;
+
     if (context == extension->background_context)
-      g_ptr_array_insert (window_objects, 0, jsc_context_get_global_object (context));
+      g_ptr_array_insert (window_objects, 0, g_object_ref (jsc_context_get_global_object (context)));
     else
-      g_ptr_array_add (window_objects, jsc_context_get_global_object (context));
+      g_ptr_array_add (window_objects, g_object_ref (jsc_context_get_global_object (context)));
   }
 
-  return jsc_value_new_array_from_garray (jsc_context_get_current (), window_objects);
+  return jsc_value_new_array_from_garray (caller_context, window_objects);
 }
 
 static void

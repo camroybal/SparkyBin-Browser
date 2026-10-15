@@ -59,10 +59,10 @@ typedef enum {
 } ViewType;
 
 typedef enum {
-  COMMAND_NONE,
-  COMMAND_BROWSER_ACTION,
-  COMMAND_PAGE_ACTION,
-} Command;
+  EPHY_MENU_COMMAND_NONE,
+  EPHY_MENU_COMMAND_BROWSER_ACTION,
+  EPHY_MENU_COMMAND_PAGE_ACTION,
+} EphyMenuCommand;
 
 typedef struct {
   char *id;
@@ -73,7 +73,7 @@ typedef struct {
   GStrv target_url_patterns;
   MenuType menu_type;
   ViewType view_type;
-  Command command;
+  EphyMenuCommand command;
   MenuContext contexts;
   gboolean checked;
   gboolean enabled;
@@ -122,13 +122,13 @@ get_command_property (JsonObject *object)
 
   command = ephy_json_node_to_string (node);
   if (!command)
-    return COMMAND_NONE;
+    return EPHY_MENU_COMMAND_NONE;
   if (strcmp (command, "_execute_browser_action") == 0)
-    return COMMAND_BROWSER_ACTION;
+    return EPHY_MENU_COMMAND_BROWSER_ACTION;
   if (strcmp (command, "_execute_page_action") == 0)
-    return COMMAND_PAGE_ACTION;
+    return EPHY_MENU_COMMAND_PAGE_ACTION;
 
-  return COMMAND_NONE;
+  return EPHY_MENU_COMMAND_NONE;
 }
 
 static MenuType
@@ -345,7 +345,7 @@ menus_handler_create (EphyWebExtensionSender *sender,
     return;
   }
 
-  g_task_return_pointer (task, g_strdup_printf ("\"%s\"", item->id), g_free);
+  g_task_return_pointer (task, ephy_json_quote_string (item->id), g_free);
 }
 
 static gboolean
@@ -577,17 +577,18 @@ menu_activate_page_button (gpointer user_data)
 }
 
 void
-menu_activate_command_action (GAction  *action,
-                              GVariant *params,
-                              gpointer  user_data)
+ephy_web_extension_api_menus_activate_command (EphyWebExtension *web_extension,
+                                               int              command)
 {
-  EphyWebExtension *web_extension = user_data;
-  Command command = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (action), "command"));
-
-  if (command == COMMAND_BROWSER_ACTION) {
-    g_idle_add_once (menu_activate_browser_action, g_object_ref (web_extension));
-  } else if (command == COMMAND_PAGE_ACTION) {
-    g_idle_add_once (menu_activate_page_button, g_object_ref (web_extension));
+  switch (command) {
+    case EPHY_MENU_COMMAND_BROWSER_ACTION:
+      g_idle_add_once (menu_activate_browser_action, g_object_ref (web_extension));
+      break;
+    case EPHY_MENU_COMMAND_PAGE_ACTION:
+      g_idle_add_once (menu_activate_page_button, g_object_ref (web_extension));
+      break;
+    case EPHY_MENU_COMMAND_NONE:
+      break;
   }
 }
 
@@ -654,28 +655,11 @@ create_context_menu_item (GHashTable          *menus,
       onclickdata = create_onclickdata (self, web_view, context_menu, modifiers, hit_test_result,
                                         item, selected_text, is_editable, is_audio, is_video);
       menu_item = webkit_context_menu_item_new_from_gaction (action, label,
-                                                             g_variant_new ("(sss)",
+                                                             g_variant_new ("(ssiu)",
                                                                             ephy_web_extension_get_guid (self),
                                                                             onclickdata,
-                                                                            tab_data));
-    }
-
-    if (item->command != COMMAND_NONE) {
-      guint handler_id = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (action), "command-handler-id"));
-
-      /* @action is a singleton owned by EphyShell that is reused by every extension and every
-       * context menu, so never leave more than one handler connected to it, and let the closure
-       * hold a reference to the extension it belongs to. */
-      if (handler_id)
-        g_signal_handler_disconnect (action, handler_id);
-
-      g_object_set_data (G_OBJECT (action), "command", GINT_TO_POINTER (item->command));
-      handler_id = g_signal_connect_data (action, "activate",
-                                          G_CALLBACK (menu_activate_command_action),
-                                          g_object_ref (self),
-                                          (GClosureNotify)g_object_unref,
-                                          0);
-      g_object_set_data (G_OBJECT (action), "command-handler-id", GUINT_TO_POINTER (handler_id));
+                                                                            tab_data,
+                                                                            item->command));
     }
 
     menu_items = g_list_append (menu_items, menu_item);
