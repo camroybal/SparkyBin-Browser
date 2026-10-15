@@ -24,6 +24,7 @@
 #include "prefs-extensions-page.h"
 
 #include "ephy-pixbuf-utils.h"
+#include "ephy-settings.h"
 #include "ephy-web-extension-manager.h"
 #include "ephy-web-extension.h"
 
@@ -39,6 +40,7 @@ struct _PrefsExtensionsPage {
 
   GtkWidget *stack;
   GtkWidget *listbox;
+  GtkWidget *enable_row;
   GCancellable *cancellable;
 };
 
@@ -289,6 +291,7 @@ prefs_extensions_page_class_init (PrefsExtensionsPageClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, PrefsExtensionsPage, stack);
   gtk_widget_class_bind_template_child (widget_class, PrefsExtensionsPage, listbox);
+  gtk_widget_class_bind_template_child (widget_class, PrefsExtensionsPage, enable_row);
 
   gtk_widget_class_bind_template_callback (widget_class, on_add_button_clicked);
 }
@@ -299,6 +302,11 @@ prefs_extensions_page_init (PrefsExtensionsPage *self)
   EphyWebExtensionManager *manager;
 
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  /* Toggling this row removes the page from the preferences dialog, which is
+   * how the feature is turned back off again. */
+  g_settings_bind (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_ENABLE_WEBEXTENSIONS,
+                   G_OBJECT (self->enable_row), "active", G_SETTINGS_BIND_DEFAULT);
 
   manager = ephy_web_extension_manager_get_default ();
   g_set_weak_pointer (&self->web_extension_manager, manager);
