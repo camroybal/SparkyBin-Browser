@@ -6,6 +6,12 @@ template $PrefsExtensionsPage: Adw.PreferencesPage {
   title: _("Extensions");
 
   Adw.PreferencesGroup {
+    /* Translator: master switch controlling whether WebExtensions are allowed to run. */
+    Adw.SwitchRow enable_row {
+      title: _("Enable WebExtensions");
+      subtitle: _("Allow extensions to read and change the pages you visit. Only install extensions you trust.");
+    }
+
     Adw.ActionRow {
       activatable: true;
       title: _("Add New Extension");
@@ -23,7 +29,7 @@ template $PrefsExtensionsPage: Adw.PreferencesPage {
       wrap: true;
       use-markup: true;
       label: _(
-        "Epiphany is compatible with web extensions for Mozilla Firefox. To find and add web extensions, visit <a href=\"https://addons.mozilla.org\">addons.mozilla.org</a>"
+        "SparkyBin Browser is compatible with web extensions for Mozilla Firefox. To find and add web extensions, visit <a href=\"https://addons.mozilla.org\">addons.mozilla.org</a>"
       );
       margin-top: 12;
       xalign: 0;
