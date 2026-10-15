@@ -345,7 +345,7 @@ ephy_default_profile_dir (void)
 {
   return profile_dir_type == EPHY_PROFILE_DIR_TEST ?
          g_strdup (ephy_profile_dir ()) :
-         g_build_filename (g_get_user_data_dir (), "epiphany", NULL);
+         g_build_filename (g_get_user_data_dir (), APPLICATION_ID, NULL);
 }
 
 /**
@@ -360,7 +360,7 @@ ephy_default_cache_dir (void)
 {
   return profile_dir_type == EPHY_PROFILE_DIR_TEST ?
          g_build_filename (ephy_profile_dir (), "cache", NULL) :
-         g_build_filename (g_get_user_cache_dir (), "epiphany", NULL);
+         g_build_filename (g_get_user_cache_dir (), APPLICATION_ID, NULL);
 }
 
 /**
@@ -375,7 +375,7 @@ ephy_default_config_dir (void)
 {
   return profile_dir_type == EPHY_PROFILE_DIR_TEST ?
          g_build_filename (ephy_profile_dir (), "config", NULL) :
-         g_build_filename (g_get_user_config_dir (), "epiphany", NULL);
+         g_build_filename (g_get_user_config_dir (), APPLICATION_ID, NULL);
 }
 
 /**
@@ -439,7 +439,7 @@ ephy_file_helpers_init (const char            *profile_dir,
     }
 
     profile_dir_global = g_build_filename (ephy_file_tmp_dir (),
-                                           "epiphany",
+                                           APPLICATION_ID,
                                            NULL);
     cache_dir = g_build_filename (profile_dir_global, "cache", NULL);
     config_dir = g_build_filename (profile_dir_global, "config", NULL);

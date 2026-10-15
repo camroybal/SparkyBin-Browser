@@ -264,7 +264,7 @@ main (int   argc,
   ephy_debug_init ();
 
   option_context = g_option_context_new ("");
-  option_group = g_option_group_new ("epiphany",
+  option_group = g_option_group_new ("sparkybin-browser",
                                      N_("SparkyBin Browser"),
                                      N_("SparkyBin Browser Options"),
                                      NULL, NULL);
@@ -429,7 +429,7 @@ main (int   argc,
   }
 
   if (mode == EPHY_EMBED_SHELL_MODE_BROWSER || mode == EPHY_EMBED_SHELL_MODE_INCOGNITO) {
-    g_set_prgname ("epiphany");
+    g_set_prgname ("sparkybin-browser");
     g_set_application_name (_("SparkyBin Browser"));
 
     gtk_window_set_default_icon_name (APPLICATION_ID);

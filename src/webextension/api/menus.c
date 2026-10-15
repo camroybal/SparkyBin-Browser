@@ -58,12 +58,6 @@ typedef enum {
   VIEW_TYPE_SIDEBAR = 1 << 2,
 } ViewType;
 
-typedef enum {
-  EPHY_MENU_COMMAND_NONE,
-  EPHY_MENU_COMMAND_BROWSER_ACTION,
-  EPHY_MENU_COMMAND_PAGE_ACTION,
-} EphyMenuCommand;
-
 typedef struct {
   char *id;
   char *parent_id;
@@ -114,7 +108,7 @@ get_strv_property (JsonObject *object,
   return ret;
 }
 
-static Command
+static EphyMenuCommand
 get_command_property (JsonObject *object)
 {
   JsonNode *node = json_object_get_member (object, "command");
