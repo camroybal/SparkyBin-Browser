@@ -284,8 +284,9 @@ ephy_web_overview_model_delete_host (EphyWebOverviewModel *model,
     g_autoptr (GUri) uri = NULL;
     GList *next = l->next;
 
+    /* A stored URL that fails even relaxed parsing cannot be matched by host. */
     uri = g_uri_parse (item->url, G_URI_FLAGS_PARSE_RELAXED, NULL);
-    if (g_strcmp0 (g_uri_get_host (uri), host) == 0) {
+    if (uri && g_strcmp0 (g_uri_get_host (uri), host) == 0) {
       changed = TRUE;
 
       ephy_web_overview_model_item_free (item);

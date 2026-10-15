@@ -411,8 +411,11 @@ content_script_window_object_cleared_cb (WebKitScriptWorld *world,
   g_assert (!jsc_value_is_object (js_browser));
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/webextensions-common.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-  data = g_bytes_get_data (bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions-common.js", 1);
+  if (bytes) {
+    data = g_bytes_get_data (bytes, &data_size);
+    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions-common.js", 1);
+  }
+  g_clear_pointer (&bytes, g_bytes_unref);
   g_clear_object (&result);
 
   ephy_webextension_install_common_apis (page,
@@ -449,9 +452,14 @@ create_web_extension_data (const char   *extension_guid,
   ret = g_variant_dict_lookup (dict, "has-background-page", "b", &data->has_background_page);
   g_assert (ret);
 
+  /* The translations come from an installed extension and are not validated, so anything
+   * that does not parse into a JSON object must be tolerated here (the web process aborts
+   * on criticals). The UI process is expected to only ship valid translations. */
   node = json_from_string (translations_json, NULL);
-  g_assert (node);
-  data->translations = json_object_ref (json_node_get_object (node));
+  if (node && JSON_NODE_HOLDS_OBJECT (node))
+    data->translations = json_object_ref (json_node_get_object (node));
+  else
+    data->translations = NULL;
 
   data->script_world = webkit_script_world_new_with_name (extension_guid);
   data->woc_id = g_signal_connect (data->script_world,
@@ -573,54 +581,6 @@ web_page_received_message (WebKitWebPage     *web_page,
 /* ================ WebExtension API ================ */
 
 static void
-ephy_web_extension_page_user_message_received_cb (WebKitWebPage     *page,
-                                                  WebKitUserMessage *message)
-{
-  const char *name = webkit_user_message_get_name (message);
-  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-  WebKitFrame *frame = webkit_web_page_get_main_frame (page);
-  G_GNUC_END_IGNORE_DEPRECATIONS
-  g_autoptr (JSCValue) value = NULL;
-
-  if (!PAGE_IS_EXTENSION (page)) {
-    g_warning ("Got user message for non-extension page");
-    return;
-  }
-
-  if (strcmp (name, "executeScript") == 0) {
-    GVariant *parameters;
-    const char *guid;
-    const char *path;
-    const char *code;
-    g_autofree char *uri = NULL;
-    /* FIXME: This should run in content-script world of the target tab. */
-    JSCContext *context = webkit_frame_get_js_context (frame);
-
-    parameters = webkit_user_message_get_parameters (message);
-    if (!parameters)
-      return;
-
-    g_variant_get (parameters, "(&s&s&s)", &guid, &path, &code);
-    uri = g_strdup_printf ("ephy-webextension://%s/%s", guid, path);
-    value = jsc_context_evaluate_with_source_uri (context, code, -1, uri, 1);
-    g_clear_object (&value);
-  } else if (strcmp (name, "sendMessage") == 0) {
-    GVariant *parameters;
-    const char *script;
-    g_autofree char *uri = NULL;
-    JSCContext *context = webkit_frame_get_js_context (frame);
-
-    parameters = webkit_user_message_get_parameters (message);
-    if (!parameters)
-      return;
-
-    g_variant_get (parameters, "(&s)", &script);
-    value = jsc_context_evaluate (context, script, -1);
-    g_clear_object (&value);
-  }
-}
-
-static void
 ephy_web_process_extension_page_created_cb (EphyWebProcessExtension *extension,
                                             WebKitWebPage           *web_page)
 {
@@ -632,11 +592,6 @@ ephy_web_process_extension_page_created_cb (EphyWebProcessExtension *extension,
       js_context = webkit_frame_get_js_context_for_script_world (webkit_web_page_get_main_frame (web_page), webkit_script_world_get_default ());
     (void)js_context;
     G_GNUC_END_IGNORE_DEPRECATIONS
-
-    g_signal_connect_swapped (web_page,
-                              "user-message-received",
-                              G_CALLBACK (ephy_web_extension_page_user_message_received_cb),
-                              NULL);
   } else {
     WebKitWebFormManager *form_manager;
 
@@ -693,6 +648,9 @@ ephy_web_process_extension_dispose (GObject *object)
   }
 
   g_clear_pointer (&extension->web_extensions, g_hash_table_destroy);
+
+  g_clear_object (&extension->background_context);
+  g_clear_pointer (&extension->view_contexts, g_hash_table_destroy);
 
   G_OBJECT_CLASS (ephy_web_process_extension_parent_class)->dispose (object);
 }
@@ -1001,7 +959,9 @@ default_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
   WebExtensionData *extension_data;
   const char *data;
   const char *guid;
-  GUri *parsed_uri;
+  const char *frame_uri;
+  g_autoptr (GUri) parsed_uri = NULL;
+  g_autofree char *extension_prefix = NULL;
   gsize data_size;
 
   if (!PAGE_IS_EXTENSION (page))
@@ -1020,11 +980,24 @@ default_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
     return;
   }
 
+  /* WebKit emits window-object-cleared for every frame of the page, including cross-origin
+   * subframes. The UI process refuses to navigate extension views elsewhere, but an extension
+   * may still embed a foreign frame, which must not inherit the extension's identity. The
+   * page URI check above already covers the main frame, so only subframes need checking. */
+  if (!webkit_frame_is_main_frame (frame)) {
+    frame_uri = webkit_frame_get_uri (frame);
+    extension_prefix = g_strdup_printf ("ephy-webextension://%s/", guid);
+    if (!frame_uri || !g_str_has_prefix (frame_uri, extension_prefix)) {
+      g_debug ("Not installing WebExtension API in foreign frame %s", frame_uri ? frame_uri : "(none)");
+      return;
+    }
+  }
+
   js_context = webkit_frame_get_js_context_for_script_world (frame, world);
 
-  /* The first context made is assumed to be the background page. */
+  /* This must be a reference, the JSCContext is otherwise destroyed with its view. */
   if (!extension->background_context && extension_data->has_background_page)
-    extension->background_context = js_context;
+    extension->background_context = g_object_ref (js_context);
 
   if (!g_hash_table_contains (extension->view_contexts, GUINT_TO_POINTER (webkit_frame_get_id (frame)))) {
     g_hash_table_insert (extension->view_contexts, GUINT_TO_POINTER (webkit_frame_get_id (frame)), g_object_ref (js_context));
@@ -1035,8 +1008,10 @@ default_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
   g_assert (!jsc_value_is_object (js_browser));
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/webextensions-common.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-  data = g_bytes_get_data (bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions-common.js", 1);
+  if (bytes) {
+    data = g_bytes_get_data (bytes, &data_size);
+    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions-common.js", 1);
+  }
   g_clear_pointer (&bytes, g_bytes_unref);
   g_clear_object (&result);
 
@@ -1060,8 +1035,10 @@ default_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
   g_clear_object (&js_function);
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/webextensions.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-  data = g_bytes_get_data (bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions.js", 1);
+  if (bytes) {
+    data = g_bytes_get_data (bytes, &data_size);
+    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/webextensions.js", 1);
+  }
   g_clear_object (&result);
 }
 
@@ -1162,15 +1139,19 @@ private_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
   g_clear_object (&result);
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/ephy_autofill.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-  data = g_bytes_get_data (bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/ephy_autofill.js", 1);
+  if (bytes) {
+    data = g_bytes_get_data (bytes, &data_size);
+    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/ephy_autofill.js", 1);
+  }
   g_clear_pointer (&bytes, g_bytes_unref);
   g_clear_object (&result);
   js_ephy_autofill = jsc_context_get_value (js_context, "EphyAutofill");
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/ephy.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-  data = g_bytes_get_data (bytes, &data_size);
-  result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/ephy.js", 1);
+  if (bytes) {
+    data = g_bytes_get_data (bytes, &data_size);
+    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/ephy.js", 1);
+  }
   g_clear_pointer (&bytes, g_bytes_unref);
   g_clear_object (&result);
   js_ephy = jsc_context_get_value (js_context, "Ephy");
@@ -1209,8 +1190,10 @@ private_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
     g_autoptr (JSCValue) jsc_overview_model = NULL;
 
     bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/overview.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
-    data = g_bytes_get_data (bytes, &data_size);
-    result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/overview.js", 1);
+    if (bytes) {
+      data = g_bytes_get_data (bytes, &data_size);
+      result = jsc_context_evaluate_with_source_uri (js_context, data, data_size, "resource:///com/sparkybin/browser-web-process-extension/js/overview.js", 1);
+    }
     g_clear_pointer (&bytes, g_bytes_unref);
     g_clear_object (&result);
 
