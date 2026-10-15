@@ -16,8 +16,8 @@
   <platform>GTK 4</platform>
   <platform>Libadwaita</platform>
 
-  <homepage rdf:resource="https://github.com/sparkybin/sparkybin-browser" />
-  <bug-database rdf:resource="https://github.com/sparkybin/sparkybin-browser/issues/" />
+  <homepage rdf:resource="https://github.com/camroybal/SparkyBin-Browser" />
+  <bug-database rdf:resource="https://github.com/camroybal/SparkyBin-Browser/issues/" />
 
   <maintainer>
     <foaf:Person>

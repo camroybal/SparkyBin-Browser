@@ -90,7 +90,7 @@
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "https://github.com/sparkybin/sparkybin-browser.git",
+                    "url" : "https://github.com/camroybal/SparkyBin-Browser.git",
                     "branch" : "main",
                     "disable-shallow-clone" : true
                 }

@@ -16,7 +16,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>A browser window</caption>
-      <image>https://github.com/sparkybin/sparkybin-browser/raw/HEAD/data/screenshot.png</image>
+      <image>https://github.com/camroybal/SparkyBin-Browser/raw/HEAD/data/screenshot.png</image>
     </screenshot>
   </screenshots>
   <update_contact>sparkybin_at_example.com</update_contact>
@@ -34,10 +34,10 @@
   <developer id="com.sparkybin">
     <name>SparkyBin</name>
   </developer>
-  <url type="homepage">https://github.com/sparkybin/sparkybin-browser</url>
-  <url type="bugtracker">https://github.com/sparkybin/sparkybin-browser/issues</url>
-  <url type="vcs-browser">https://github.com/sparkybin/sparkybin-browser</url>
-  <url type="contact">https://github.com/sparkybin/sparkybin-browser</url>
+  <url type="homepage">https://github.com/camroybal/SparkyBin-Browser</url>
+  <url type="bugtracker">https://github.com/camroybal/SparkyBin-Browser/issues</url>
+  <url type="vcs-browser">https://github.com/camroybal/SparkyBin-Browser</url>
+  <url type="contact">https://github.com/camroybal/SparkyBin-Browser</url>
   <translation type="gettext">sparkybin-browser</translation>
   <provides>
     <binary>sparkybin-browser</binary>
