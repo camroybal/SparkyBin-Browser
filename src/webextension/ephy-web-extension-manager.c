@@ -1680,10 +1680,12 @@ typedef struct {
 } WindowAddedCallbackData;
 
 static void
-window_added_callback_data_free (WindowAddedCallbackData *data)
+window_added_callback_data_free (gpointer data)
 {
-  g_clear_object (&data->web_extension);
-  g_free (data);
+  WindowAddedCallbackData *callback_data = data;
+
+  g_clear_object (&callback_data->web_extension);
+  g_free (callback_data);
 }
 
 static void

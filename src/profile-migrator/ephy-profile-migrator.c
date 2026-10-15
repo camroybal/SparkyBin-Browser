@@ -198,7 +198,7 @@ migrate_pre_flatpak_webapps (void)
 
       tryexec = g_key_file_get_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL);
       if (!tryexec)
-        g_key_file_set_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, "epiphany");
+        g_key_file_set_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, "sparkybin-browser");
 
       if (!g_key_file_save_to_file (keyfile, new_desktop_file_name, &error)) {
         g_warning ("Failed to save desktop file %s", error->message);

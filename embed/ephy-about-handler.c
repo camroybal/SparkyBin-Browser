@@ -218,15 +218,15 @@ ephy_about_handler_handle_about (EphyAboutHandler       *handler,
 }
 
 static gboolean
-ephy_about_handler_handle_epiphany (EphyAboutHandler       *handler,
+ephy_about_handler_handle_sparkybin (EphyAboutHandler       *handler,
                                     WebKitURISchemeRequest *request)
 {
   char *data;
 
-  data = g_strdup_printf ("<html class=\"epiphany-html\"><head><title>%s</title>"
+  data = g_strdup_printf ("<html class=\"sparkybin-html\"><head><title>%s</title>"
                           "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
                           "<link href=\""EPHY_PAGE_TEMPLATE_ABOUT_CSS "\" rel=\"stylesheet\" type=\"text/css\">"
-                          "</head><body class=\"epiphany-body\">"
+                          "</head><body class=\"sparkybin-body\">"
                           "<div id=\"ephytext\">"
                           "« Il semble que la perfection soit atteinte non quand il n'y a plus rien à"
                           " ajouter, mais quand il n'y a plus rien à retrancher. »"
@@ -651,8 +651,8 @@ ephy_about_handler_handle_request (EphyAboutHandler       *handler,
 
   if (g_strcmp0 (path, "memory") == 0)
     handled = ephy_about_handler_handle_memory (handler, request);
-  else if (g_strcmp0 (path, "epiphany") == 0)
-    handled = ephy_about_handler_handle_epiphany (handler, request);
+  else if (g_strcmp0 (path, "sparkybin") == 0)
+    handled = ephy_about_handler_handle_sparkybin (handler, request);
   else if (g_strcmp0 (path, "applications") == 0)
     handled = ephy_about_handler_handle_applications (handler, request);
   else if (g_strcmp0 (path, "newtab") == 0)
