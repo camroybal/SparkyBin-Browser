@@ -2,15 +2,15 @@
 <rdf:RDF xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:ephy="http://gnome.org/ns/epiphany#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <channel rdf:about="file://@pkgdatadir@/default-bookmarks.rdf">
     <title>SparkyBin Browser bookmarks</title>
-    <link>https://github.com/sparkybin/sparkybin-browser</link>
+    <link>https://github.com/camroybal/SparkyBin-Browser</link>
     <items>
       <rdf:Seq>
-        <rdf:li rdf:resource="https://github.com/sparkybin/sparkybin-browser"/>
+        <rdf:li rdf:resource="https://github.com/camroybal/SparkyBin-Browser"/>
       </rdf:Seq>
     </items>
   </channel>
-  <item rdf:about="https://github.com/sparkybin/sparkybin-browser">
+  <item rdf:about="https://github.com/camroybal/SparkyBin-Browser">
     <title>SparkyBin Browser</title>
-    <link>https://github.com/sparkybin/sparkybin-browser</link>
+    <link>https://github.com/camroybal/SparkyBin-Browser</link>
   </item>
 </rdf:RDF>

@@ -20,7 +20,7 @@ variables:
   RUNTIME_REPO: 'https://nightly.gnome.org/gnome-nightly.flatpakrepo'
   FLATPAK_MODULE: 'sparkybin-browser'
   APP_ID: 'com.sparkybin.Browser.Devel'
-  FDO_UPSTREAM_REPO: sparkybin/sparkybin-browser
+  FDO_UPSTREAM_REPO: camroybal/SparkyBin-Browser
 
 stages:
   - prepare

@@ -61,15 +61,12 @@ authorized by, sponsored by, or otherwise approved by the GNOME Foundation.
 Placeholders to review before release
 -------------------------------------
 
-The following values were set to placeholders during the rebrand and should be
-reviewed and replaced with the project's real details:
+Project URLs (homepage, bug tracker, VCS, and Flatpak source) point at the fork
+at https://github.com/camroybal/SparkyBin-Browser. The following are still
+placeholders and should be reviewed:
 
-  * Homepage, bug tracker, and download URLs
-    (`https://github.com/sparkybin/sparkybin-browser`).
   * Contact email (`sparkybin@example.com`).
   * Application icon artwork in `data/icons/` and `help/C/media/`.
-  * Flatpak `git` source URLs in `com.sparkybin.Browser.json` and
-    `com.sparkybin.Browser.Canary.json`.
   * Help page screenshots (`help/C/media/epiphany-*.png`) still depict the
     upstream user interface.
   * The AppStream screenshot (`data/screenshot.png`) still depicts the upstream
