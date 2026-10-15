@@ -110,26 +110,80 @@ ephy_web_overview_model_urls_to_js_value (EphyWebOverviewModel *model,
   return urls;
 }
 
+typedef void (*EphyOverviewListenerCallback) (gpointer    user_data,
+                                              JSCValue   *function,
+                                              const char *a,
+                                              const char *b);
+
+/* Copy the live listeners out of @listeners before calling them: calling a listener runs
+ * arbitrary JavaScript, which may register or drop listeners and would otherwise corrupt the
+ * iteration of @listeners itself. */
+static void
+notify_listeners (GHashTable                  *listeners,
+                  EphyOverviewListenerCallback callback,
+                  gpointer                     user_data,
+                  const char                  *a,
+                  const char                  *b)
+{
+  g_autoptr (GPtrArray) functions = g_ptr_array_new_with_free_func (g_object_unref);
+  GHashTableIter iter;
+  gpointer key;
+
+  g_hash_table_iter_init (&iter, listeners);
+  while (g_hash_table_iter_next (&iter, &key, NULL)) {
+    g_autoptr (JSCValue) value = jsc_weak_value_get_value (JSC_WEAK_VALUE (key));
+
+    if (value && jsc_value_is_function (value))
+      g_ptr_array_add (functions, g_steal_pointer (&value));
+  }
+
+  for (guint i = 0; i < functions->len; i++)
+    callback (user_data, g_ptr_array_index (functions, i), a, b);
+}
+
+static void
+notify_urls_changed_cb (gpointer    user_data,
+                        JSCValue   *function,
+                        const char *a,
+                        const char *b)
+{
+  EphyWebOverviewModel *model = user_data;
+  g_autoptr (JSCValue) ret = NULL;
+  g_autoptr (GPtrArray) urls = NULL;
+
+  /* The array must be built in the listener's own context: JSC does not allow values from one
+   * realm to be used in another, and the same array cannot be shared between listeners. */
+  urls = ephy_web_overview_model_urls_to_js_value (model, jsc_value_get_context (function));
+  ret = jsc_value_function_call (function, G_TYPE_PTR_ARRAY, urls, G_TYPE_NONE);
+  (void)ret;
+}
+
+static void
+notify_thumbnail_changed_cb (gpointer    user_data,
+                             JSCValue   *function,
+                             const char *url,
+                             const char *path)
+{
+  g_autoptr (JSCValue) ret = jsc_value_function_call (function, G_TYPE_STRING, url, G_TYPE_STRING, path, G_TYPE_NONE);
+  (void)ret;
+}
+
+static void
+notify_title_changed_cb (gpointer    user_data,
+                         JSCValue   *function,
+                         const char *url,
+                         const char *title)
+{
+  g_autoptr (JSCValue) ret = jsc_value_function_call (function, G_TYPE_STRING, url, G_TYPE_STRING, title, G_TYPE_NONE);
+  (void)ret;
+}
+
 static void
 ephy_web_overview_model_notify_urls_changed (EphyWebOverviewModel *model)
 {
-  GHashTableIter iter;
-  gpointer key;
-  g_autoptr (GPtrArray) urls = NULL;
+  g_assert (EPHY_IS_WEB_OVERVIEW_MODEL (model));
 
-  g_hash_table_iter_init (&iter, model->urls_listeners);
-  while (g_hash_table_iter_next (&iter, &key, NULL)) {
-    g_autoptr (JSCValue) value = NULL;
-    g_autoptr (JSCValue) ret = NULL;
-
-    value = jsc_weak_value_get_value (JSC_WEAK_VALUE (key));
-    if (value && jsc_value_is_function (value)) {
-      if (!urls)
-        urls = ephy_web_overview_model_urls_to_js_value (model, jsc_value_get_context (value));
-      ret = jsc_value_function_call (value, G_TYPE_PTR_ARRAY, urls, G_TYPE_NONE);
-      (void)ret;
-    }
-  }
+  notify_listeners (model->urls_listeners, notify_urls_changed_cb, model, NULL, NULL);
 }
 
 static void
@@ -137,22 +191,9 @@ ephy_web_overview_model_notify_thumbnail_changed (EphyWebOverviewModel *model,
                                                   const char           *url,
                                                   const char           *path)
 {
-  GHashTableIter iter;
-  gpointer key;
+  g_assert (EPHY_IS_WEB_OVERVIEW_MODEL (model));
 
-  g_hash_table_iter_init (&iter, model->thumbnail_listeners);
-  while (g_hash_table_iter_next (&iter, &key, NULL)) {
-    g_autoptr (JSCValue) value = NULL;
-    g_autoptr (JSCValue) ret = NULL;
-
-    value = jsc_weak_value_get_value (JSC_WEAK_VALUE (key));
-    if (value) {
-      if (jsc_value_is_function (value)) {
-        ret = jsc_value_function_call (value, G_TYPE_STRING, url, G_TYPE_STRING, path, G_TYPE_NONE);
-        (void)ret;
-      }
-    }
-  }
+  notify_listeners (model->thumbnail_listeners, notify_thumbnail_changed_cb, model, url, path);
 }
 
 static void
@@ -160,22 +201,9 @@ ephy_web_overview_model_notify_title_changed (EphyWebOverviewModel *model,
                                               const char           *url,
                                               const char           *title)
 {
-  GHashTableIter iter;
-  gpointer key;
+  g_assert (EPHY_IS_WEB_OVERVIEW_MODEL (model));
 
-  g_hash_table_iter_init (&iter, model->title_listeners);
-  while (g_hash_table_iter_next (&iter, &key, NULL)) {
-    g_autoptr (JSCValue) value = NULL;
-    g_autoptr (JSCValue) ret = NULL;
-
-    value = jsc_weak_value_get_value (JSC_WEAK_VALUE (key));
-    if (value) {
-      if (jsc_value_is_function (value)) {
-        ret = jsc_value_function_call (value, G_TYPE_STRING, url, G_TYPE_STRING, title, G_TYPE_NONE);
-        (void)ret;
-      }
-    }
-  }
+  notify_listeners (model->title_listeners, notify_title_changed_cb, model, url, title);
 }
 
 EphyWebOverviewModel *

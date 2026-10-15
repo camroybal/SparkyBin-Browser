@@ -21,6 +21,7 @@
 #include "config.h"
 #include "pageaction.h"
 
+#include "ephy-json-utils.h"
 #include "ephy-pixbuf-utils.h"
 #include "ephy-shell.h"
 #include "ephy-web-extension.h"
@@ -168,7 +169,7 @@ pageaction_handler_gettitle (EphyWebExtensionSender *sender,
   if (!title)
     title = ephy_web_extension_get_page_action_title (sender->extension);
 
-  g_task_return_pointer (task, g_strdup_printf ("\"%s\"", title ? title : ""), g_free);
+  g_task_return_pointer (task, ephy_json_quote_string (title ? title : ""), g_free);
 }
 
 static void

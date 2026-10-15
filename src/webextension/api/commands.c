@@ -22,6 +22,7 @@
 #include "commands.h"
 
 #include "api-utils.h"
+#include "ephy-json-utils.h"
 #include "ephy-shell.h"
 
 static void
@@ -121,7 +122,7 @@ setup_action (EphyWebExtension    *self,
 
   g_signal_connect (action, "activate", G_CALLBACK (on_command_activated), self);
   /* Lazy way to pass this info to on_command_activated(). */
-  g_object_set_data_full (G_OBJECT (action), "command-name-json", g_strdup_printf ("\"%s\"", command->name), g_free);
+  g_object_set_data_full (G_OBJECT (action), "command-name-json", ephy_json_quote_string (command->name), g_free);
 }
 
 static GHashTable *

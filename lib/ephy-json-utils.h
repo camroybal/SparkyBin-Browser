@@ -56,6 +56,8 @@ JsonObject   *ephy_json_node_get_object             (JsonNode            *node);
 
 const char   *ephy_json_node_to_string              (JsonNode            *node);
 
+char         *ephy_json_quote_string                (const char          *value);
+
 gint64       ephy_json_node_get_int                 (JsonNode            *node);
 
 double       ephy_json_node_get_double              (JsonNode            *node);
