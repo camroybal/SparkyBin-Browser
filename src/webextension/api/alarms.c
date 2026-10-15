@@ -71,7 +71,7 @@ timestamp_to_ms (double timestamp)
 {
   guint64 now_ms = time_now_ms ();
 
-  if (now_ms > timestamp)
+  if (now_ms > timestamp || timestamp > G_MAXUINT / 1000.0)
     return 0;
 
   return (guint)(timestamp - now_ms);
@@ -80,6 +80,9 @@ timestamp_to_ms (double timestamp)
 static guint
 minutes_to_ms (double minutes)
 {
+  if (minutes < 0.0)
+    return 0;
+
   return (guint)(minutes * 60000);
 }
 
@@ -185,6 +188,7 @@ alarms_handler_create (EphyWebExtensionSender *sender,
 
   alarm = g_new0 (Alarm, 1);
   alarm->repeat_interval_ms = minutes_to_ms (period_in_minutes);
+  alarm->repeat_interval_minutes = period_in_minutes;
   alarm->web_extension = sender->extension;
   alarm->name = g_strdup (name);
 

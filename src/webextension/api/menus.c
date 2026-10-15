@@ -646,7 +646,7 @@ create_context_menu_item (GHashTable          *menus,
 
       /* If the menus root is an item with the same name as the extension we use it as the root.
        * otherwise we create a new root below. */
-      if (!item->parent_id && g_hash_table_size (menus) == 1 && strcmp (item->title, name) == 0) {
+      if (item->title && !item->parent_id && g_hash_table_size (menus) == 1 && strcmp (item->title, name) == 0) {
         return menu_item;
       }
     } else {
@@ -661,10 +661,21 @@ create_context_menu_item (GHashTable          *menus,
     }
 
     if (item->command != COMMAND_NONE) {
+      guint handler_id = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (action), "command-handler-id"));
+
+      /* @action is a singleton owned by EphyShell that is reused by every extension and every
+       * context menu, so never leave more than one handler connected to it, and let the closure
+       * hold a reference to the extension it belongs to. */
+      if (handler_id)
+        g_signal_handler_disconnect (action, handler_id);
+
       g_object_set_data (G_OBJECT (action), "command", GINT_TO_POINTER (item->command));
-      g_signal_connect (action, "activate",
-                        G_CALLBACK (menu_activate_command_action),
-                        self);
+      handler_id = g_signal_connect_data (action, "activate",
+                                          G_CALLBACK (menu_activate_command_action),
+                                          g_object_ref (self),
+                                          (GClosureNotify)g_object_unref,
+                                          0);
+      g_object_set_data (G_OBJECT (action), "command-handler-id", GUINT_TO_POINTER (handler_id));
     }
 
     menu_items = g_list_append (menu_items, menu_item);
@@ -688,8 +699,8 @@ ephy_web_extension_api_menus_create_context_menu (EphyWebExtension    *self,
   const char *selected_text;
   gboolean is_editable;
   gboolean is_password;
-  GUri *document_uri;
-  GUri *target_uri = NULL;
+  g_autoptr (GUri) document_uri = NULL;
+  g_autoptr (GUri) target_uri = NULL;
 
   if (!menus)
     return NULL;

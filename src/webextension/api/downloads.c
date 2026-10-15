@@ -60,17 +60,22 @@ downloads_handler_download (EphyWebExtensionSender *sender,
 
   filename = ephy_json_object_get_string (options, "filename");
   if (filename) {
-    g_autoptr (GFile) downloads_dir = g_file_new_for_path (ephy_file_get_downloads_dir ());
+    g_autofree char *downloads_path = g_canonicalize_filename (ephy_file_get_downloads_dir (), NULL);
+    g_autoptr (GFile) downloads_dir = g_file_new_for_path (downloads_path);
     g_autoptr (GFile) destination = g_file_resolve_relative_path (downloads_dir, filename);
-    g_autoptr (GFile) parent_dir = g_file_get_parent (destination);
+    g_autofree char *destination_path = g_canonicalize_filename (g_file_get_path (destination), NULL);
+    g_autoptr (GFile) canonical_destination = g_file_new_for_path (destination_path);
+    g_autoptr (GFile) parent_dir = g_file_get_parent (canonical_destination);
 
-    /* Relative paths are allowed however it cannot escape the parent directory. */
-    if (!g_file_has_prefix (destination, downloads_dir)) {
+    /* Relative paths are allowed however it cannot escape the parent directory.
+     * g_file_has_prefix() is a plain string comparison so any ".." components must be
+     * resolved first, otherwise "../../foo" would still match the prefix. */
+    if (!g_file_has_prefix (canonical_destination, downloads_dir)) {
       g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "downloads.download(): Relative filename cannot contain escape parent directory");
       return;
     }
 
-    suggested_filename = g_file_get_basename (destination);
+    suggested_filename = g_file_get_basename (canonical_destination);
     suggested_directory = g_file_get_path (parent_dir);
   }
 
@@ -328,13 +333,29 @@ regex_matches (JSCContext *context,
 {
   /* WebExtensions can include arbitrary regex; To match expectations we need to run this against
    * the JavaScript implementation of regex rather than PCREs.
-   * Note that this is absolutely untrusted code, however @context is private to this single API call
-   * so they cannot actually do anything except make this match succeed or fail. */
-  /* FIXME: Maybe this can use `jsc_value_constructor_call()` and `jsc_context_evaluate_in_object()` instead of
-   * printf to avoid quotes potentially conflicting. */
-  g_autofree char *code = g_strdup_printf ("let re = new RegExp('%s'); re.test('%s');", regex, string);
-  g_autoptr (JSCValue) ret = jsc_context_evaluate (context, code, -1);
-  return jsc_value_to_boolean (ret);
+   * Note that this is absolutely untrusted code. @regex and @string are therefore passed as a JSON
+   * array literal rather than interpolated into the evaluated source, so that they cannot break out
+   * of the string literal and execute arbitrary code in the UI process. */
+  g_autoptr (JsonBuilder) builder = NULL;
+  g_autoptr (JsonNode) node = NULL;
+  g_autofree char *arguments = NULL;
+  g_autofree char *code = NULL;
+  g_autoptr (JSCValue) ret = NULL;
+
+  builder = json_builder_new ();
+  json_builder_begin_array (builder);
+  json_builder_add_string_value (builder, regex);
+  json_builder_add_string_value (builder, string);
+  json_builder_end_array (builder);
+  node = json_builder_get_root (builder);
+
+  arguments = json_to_string (node, FALSE);
+  code = g_strdup_printf ("new RegExp(%s[0]).test(%s[1])", arguments, arguments);
+
+  ret = jsc_context_evaluate (context, code, -1);
+
+  /* An invalid regex throws, in which case we treat it as not matching. */
+  return ret ? jsc_value_to_boolean (ret) : FALSE;
 }
 
 static gboolean
@@ -623,8 +644,10 @@ filter_downloads (GList         *downloads,
   if (query->order_by->len)
     matches = g_list_sort_with_data (matches, (GCompareDataFunc)order_downloads, query->order_by);
 
-  if (query->limit) {
-    extras = g_list_nth (matches, query->limit + 1);
+  /* A limit of -1 means it was not part of the query. It is otherwise the number of
+   * downloads to return, so an extra element must not be kept. */
+  if (query->limit > 0) {
+    extras = g_list_nth (matches, query->limit);
     if (extras) {
       extras = g_list_remove_link (matches, extras);
       g_list_free (extras);
