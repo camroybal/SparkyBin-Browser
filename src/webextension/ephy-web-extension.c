@@ -81,6 +81,9 @@ struct _EphyWebExtension {
 
   char *guid;
   char *default_locale;
+  char *name;
+  char *version;
+  char *description;
   char *author;
   char *homepage_url;
 
@@ -114,6 +117,9 @@ gboolean
 ephy_web_extension_has_resource (EphyWebExtension *self,
                                  const char       *name)
 {
+  if (!name)
+    return FALSE;
+
   return g_hash_table_contains (self->resources, name);
 }
 
@@ -125,6 +131,9 @@ ephy_web_extension_get_resource (EphyWebExtension *self,
   GBytes *resource;
   if (length)
     *length = 0;
+
+  if (!name)
+    return NULL;
 
   resource = g_hash_table_lookup (self->resources, name);
   if (!resource) {
@@ -201,6 +210,9 @@ ephy_web_extension_get_icon (EphyWebExtension *self,
   g_autoptr (GdkPixbufLoader) loader = NULL;
   GBytesIcon *icon;
 
+  if (!self->extension)
+    return NULL;
+
   icon = G_BYTES_ICON (webkit_web_extension_get_icon (self->extension, size, size));
   if (!icon)
     return NULL;
@@ -219,26 +231,39 @@ ephy_web_extension_get_icon (EphyWebExtension *self,
 const char *
 ephy_web_extension_get_name (EphyWebExtension *self)
 {
-  return webkit_web_extension_get_display_name (self->extension);
+  /* The name identifies the extension in the webextensions-active setting, so it must not
+   * be lost when WebKit has no representation of it. */
+  if (self->name && *self->name)
+    return self->name;
+
+  return self->extension ? webkit_web_extension_get_display_name (self->extension) : "";
 }
 
 const char *
 ephy_web_extension_get_short_name (EphyWebExtension *self)
 {
-  const gchar *short_name = webkit_web_extension_get_display_short_name (self->extension);
-  return short_name ? short_name : webkit_web_extension_get_display_name (self->extension);
+  const char *name = ephy_web_extension_get_name (self);
+  const gchar *short_name = self->extension ? webkit_web_extension_get_display_short_name (self->extension) : NULL;
+
+  return short_name ? short_name : name;
 }
 
 const char *
 ephy_web_extension_get_version (EphyWebExtension *self)
 {
-  return webkit_web_extension_get_display_version (self->extension);
+  if (self->version && *self->version)
+    return self->version;
+
+  return self->extension ? webkit_web_extension_get_display_version (self->extension) : "";
 }
 
 const char *
 ephy_web_extension_get_description (EphyWebExtension *self)
 {
-  return webkit_web_extension_get_display_description (self->extension);
+  if (self->description && *self->description)
+    return self->description;
+
+  return self->extension ? webkit_web_extension_get_display_description (self->extension) : "";
 }
 
 const char *
@@ -370,7 +395,9 @@ web_extension_add_content_script (JsonArray *array,
   }
 
   /* TODO: The default value is "document_idle", which in WebKit term is document_end */
-  run_at = json_object_get_string_member_with_default (object, "run_at", "document_idle");
+  run_at = ephy_json_object_get_string (object, "run_at");
+  if (!run_at)
+    run_at = "document_idle";
   if (strcmp (run_at, "document_start") == 0) {
     injection_time = WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START;
   } else if (strcmp (run_at, "document_end") == 0) {
@@ -419,8 +446,13 @@ generate_background_page (EphyWebExtension *self,
   gsize length;
 
   for (unsigned int i = 0; i < json_array_get_length (scripts); i++) {
-    const char *script_file = json_array_get_string_element (scripts, i);
-    g_autofree char *escaped_script_file = g_uri_escape_string (script_file, G_URI_RESERVED_CHARS_ALLOWED_IN_PATH, FALSE);
+    const char *script_file = ephy_json_array_get_string (scripts, i);
+    g_autofree char *escaped_script_file = NULL;
+
+    if (!script_file)
+      continue;
+
+    escaped_script_file = g_uri_escape_string (script_file, G_URI_RESERVED_CHARS_ALLOWED_IN_PATH, FALSE);
 
     g_string_append_printf (background_page,
                             "<script type=\"text/javascript\" src=\"ephy-webextension://%s/%s\"></script>",
@@ -504,9 +536,9 @@ web_extension_get_translation (EphyWebExtension *self,
     return NULL;
   }
 
-  name = json_object_get_object_member (root_object, key);
+  name = ephy_json_object_get_object (root_object, key);
   if (name)
-    return g_strdup (json_object_get_string_member (name, "message"));
+    return ephy_json_object_dup_string (name, "message");
 
   return NULL;
 }
@@ -599,7 +631,7 @@ web_extension_parse_page_action (EphyWebExtension *self,
   icon_node = json_object_get_member (object, "default_icon");
   if (icon_node) {
     if (JSON_NODE_HOLDS_VALUE (icon_node)) {
-      self->page_action->icon = g_strdup (json_node_get_string (icon_node));
+      self->page_action->icon = g_strdup (ephy_json_node_to_string (icon_node));
     } else if (JSON_NODE_HOLDS_OBJECT (icon_node)) {
       JsonObject *icon_obj = json_node_get_object (icon_node);
       const char *icon_path = ephy_json_object_get_string (icon_obj, "16");
@@ -614,7 +646,7 @@ web_extension_parse_page_action (EphyWebExtension *self,
         GList *members = json_object_get_members (icon_obj);
 
         if (members)
-          icon_path = json_object_get_string_member (icon_obj, (const char *)members->data);
+          icon_path = ephy_json_object_get_string (icon_obj, (const char *)members->data);
         g_list_free (members);
       }
       self->page_action->icon = g_strdup (icon_path);
@@ -660,8 +692,9 @@ web_extension_add_permission (JsonArray *array,
   }
 
   if (strstr (permission, "://")) {
-    if (!g_str_has_prefix (permission, "*://") &&
-        !is_supported_scheme (g_uri_peek_scheme (permission))) {
+    const char *scheme = g_uri_peek_scheme (permission);
+
+    if (!g_str_has_prefix (permission, "*://") && (!scheme || !is_supported_scheme (scheme))) {
       LOG ("Unsupported host permission: %s", permission);
       return;
     }
@@ -870,6 +903,14 @@ web_extension_parse_commands (EphyWebExtension *self,
 }
 
 static void
+web_extension_custom_css_free (WebExtensionCustomCSS *css)
+{
+  g_clear_pointer (&css->code, g_free);
+  g_clear_pointer (&css->style, webkit_user_style_sheet_unref);
+  g_free (css);
+}
+
+static void
 ephy_web_extension_dispose (GObject *object)
 {
   EphyWebExtension *self = EPHY_WEB_EXTENSION (object);
@@ -880,6 +921,9 @@ ephy_web_extension_dispose (GObject *object)
   g_clear_pointer (&self->manifest, g_free);
   g_clear_pointer (&self->guid, g_free);
   g_clear_pointer (&self->default_locale, g_free);
+  g_clear_pointer (&self->name, g_free);
+  g_clear_pointer (&self->version, g_free);
+  g_clear_pointer (&self->description, g_free);
   g_clear_pointer (&self->author, g_free);
   g_clear_pointer (&self->homepage_url, g_free);
   g_clear_pointer (&self->local_storage_path, g_free);
@@ -899,7 +943,7 @@ ephy_web_extension_dispose (GObject *object)
 
   g_clear_pointer (&self->page_action, web_extension_page_action_free);
   g_clear_pointer (&self->browser_action, web_extension_browser_action_free);
-  g_clear_list (&self->custom_css, (GDestroyNotify)webkit_user_style_sheet_unref);
+  g_clear_list (&self->custom_css, (GDestroyNotify)web_extension_custom_css_free);
 
   g_hash_table_destroy (self->page_action_map);
 
@@ -949,6 +993,11 @@ ephy_web_extension_parse_manifest (EphyWebExtension  *self,
     g_set_error (error, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_MANIFEST, _("Failed to parse manifest.json: %s"), local_error->message);
     return FALSE;
   }
+  /* webkit_web_extension_new() can also fail by returning NULL without setting an error.
+   * Several accessors below used to depend on it unconditionally, which made an extension
+   * silently lose its name (so it could never be activated) and its background page. */
+  if (!self->extension)
+    g_warning ("WebKit could not build its WebExtension representation of %s, using the manifest only", self->base_location);
 
   manifest = ephy_web_extension_get_resource (self, "manifest.json", &length);
   if (!manifest) {
@@ -977,6 +1026,12 @@ ephy_web_extension_parse_manifest (EphyWebExtension  *self,
   self->manifest = g_strndup ((char *)manifest, length);
   self->default_locale = g_strdup (ephy_json_object_get_string (root_object, "default_locale"));
 
+  /* Epiphany used to take the name, version and description from WebKit's own manifest
+   * parsing, but that object is optional (see webkit_web_extension_new() below) and these
+   * values are what identifies an extension, so they are parsed here as well. */
+  self->name = ephy_web_extension_manifest_get_localized_string (self, root_object, "name");
+  self->version = ephy_web_extension_manifest_get_localized_string (self, root_object, "version");
+  self->description = ephy_web_extension_manifest_get_localized_string (self, root_object, "description");
   self->homepage_url = ephy_web_extension_manifest_get_localized_string (self, root_object, "homepage_url");
   self->author = ephy_web_extension_manifest_get_localized_string (self, root_object, "author");
 
@@ -1324,7 +1379,10 @@ ephy_web_extension_has_browser_action (EphyWebExtension *self)
 gboolean
 ephy_web_extension_has_background_web_view (EphyWebExtension *self)
 {
-  return webkit_web_extension_get_has_background_content (self->extension) || webkit_web_extension_get_has_persistent_background_content (self->extension);
+  /* Epiphany parses both a background page and a list of background scripts (for which it
+   * generates a page), so its own manifest parsing is what decides this. Asking WebKit as
+   * well meant a NULL WebKitWebExtension was enough to silently drop the background page. */
+  return self->background_page != NULL;
 }
 
 const char *
@@ -1350,7 +1408,7 @@ ephy_web_extension_get_content_script_js (EphyWebExtension *self,
 const char *
 ephy_web_extension_get_browser_popup (EphyWebExtension *self)
 {
-  return self->browser_action->popup;
+  return self->browser_action ? self->browser_action->popup : NULL;
 }
 
 WebExtensionCustomCSS *

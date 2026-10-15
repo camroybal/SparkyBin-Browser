@@ -176,6 +176,13 @@ windows_handler_get_current (EphyWebExtensionSender *sender,
   else
     window = EPHY_WINDOW (gtk_widget_get_root (GTK_WIDGET (sender->view)));
 
+  /* A web view that is not (yet) attached to an EphyWindow (e.g. a popup or
+   * options view, or during teardown) has no window root. */
+  if (!EPHY_IS_WINDOW (window)) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "windows.getCurrent(): Failed to find window");
+    return;
+  }
+
   populate_tabs = get_info ? ephy_json_object_get_boolean (get_info, "populate", FALSE) : FALSE;
 
   add_window_to_json (sender->extension, builder, window, populate_tabs);

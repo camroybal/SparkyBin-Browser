@@ -132,10 +132,17 @@ JsonNode *
 ephy_web_extension_api_tabs_create_tab_object (EphyWebExtension *extension,
                                                EphyWebView      *web_view)
 {
+  GtkWidget *window = GTK_WIDGET (gtk_widget_get_root (GTK_WIDGET (web_view)));
   g_autoptr (JsonBuilder) builder = json_builder_new ();
+
+  /* A web view that is not (yet) attached to an EphyWindow (e.g. a popup or
+   * options view, or during teardown) has no window root. */
+  if (!EPHY_IS_WINDOW (window))
+    return NULL;
+
   add_web_view_to_json (extension,
                         builder,
-                        EPHY_WINDOW (gtk_widget_get_root (GTK_WIDGET (web_view))),
+                        EPHY_WINDOW (window),
                         web_view);
   return json_builder_get_root (builder);
 }
