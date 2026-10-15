@@ -25,8 +25,17 @@
 typedef struct {
   WebKitWebPage *page;
   WebKitFrame *frame;
-  const char *guid;
+  char *guid;
 } EphySendMessageData;
+
+static void
+send_message_data_free (gpointer data)
+{
+  EphySendMessageData *send_message_data = data;
+
+  g_clear_pointer (&send_message_data->guid, g_free);
+  g_free (send_message_data);
+}
 
 typedef struct {
   JSCValue *resolve_callback;
@@ -66,7 +75,7 @@ on_send_message_finish (WebKitWebPage *page,
   if (error) {
     ret = jsc_value_function_call (callback_data->reject_callback, G_TYPE_STRING, error->message, G_TYPE_NONE);
   } else {
-    const char *json = g_variant_get_string (webkit_user_message_get_parameters (response), NULL);
+    const char *json = webkit_user_message_get_parameters (response) ? g_variant_get_string (webkit_user_message_get_parameters (response), NULL) : "";
     g_autoptr (JSCValue) value = NULL;
     JSCContext *context = jsc_value_get_context (callback_data->resolve_callback);
 
@@ -76,7 +85,10 @@ on_send_message_finish (WebKitWebPage *page,
     } else if (g_strcmp0 (webkit_user_message_get_name (response), "error") == 0) {
       ret = jsc_value_function_call (callback_data->reject_callback, G_TYPE_STRING, json, G_TYPE_NONE);
     } else {
+      /* An unparsable value must not be handed to the callback, resolve with undefined instead. */
       value = jsc_value_new_from_json (context, json);
+      if (!value)
+        value = jsc_value_new_undefined (context);
       ret = jsc_value_function_call (callback_data->resolve_callback, JSC_TYPE_VALUE, value, G_TYPE_NONE);
     }
   }
@@ -139,15 +151,14 @@ js_getmessage (const char *message,
 static char *
 js_getuilanguage (void)
 {
-  char *locale = setlocale (LC_MESSAGES, NULL);
+  const char *locale = setlocale (LC_MESSAGES, NULL);
+  g_autofree char *copy = NULL;
 
-  if (locale) {
-    locale[2] = '\0';
+  /* setlocale() returns a pointer that must not be modified and that is only valid until the
+   * next setlocale() call, so work on a copy. */
+  copy = g_strdup (locale ? locale : "en");
 
-    return g_strdup (locale);
-  }
-
-  return g_strdup ("en");
+  return g_strndup (copy, 2);
 }
 
 static char *
@@ -242,23 +253,28 @@ ephy_webextension_install_common_apis (WebKitWebPage *page,
 
   /* Manifest */
   manifest_object = jsc_value_new_from_json (js_context, manifest);
-  js_function = jsc_value_new_function (js_context,
-                                        NULL,
-                                        G_CALLBACK (js_getmanifest), g_object_ref (manifest_object), g_object_unref,
-                                        JSC_TYPE_VALUE,
-                                        0);
-  jsc_value_object_set_property (js_extension, "getManifest", js_function);
-  g_clear_object (&js_function);
+  if (manifest_object) {
+    js_function = jsc_value_new_function (js_context,
+                                          NULL,
+                                          G_CALLBACK (js_getmanifest), g_object_ref (manifest_object), g_object_unref,
+                                          JSC_TYPE_VALUE,
+                                          0);
+    jsc_value_object_set_property (js_extension, "getManifest", js_function);
+    g_clear_object (&js_function);
+  } else {
+    g_warning ("Failed to parse web extension manifest of %s", guid);
+  }
 
   /* global functions */
   send_message_data = g_new (EphySendMessageData, 1);
   send_message_data->page = page;
   send_message_data->frame = frame;
-  send_message_data->guid = guid;
+  /* @guid is owned by the caller's GUri, so it must be copied. */
+  send_message_data->guid = g_strdup (guid);
   js_function = jsc_value_new_function (js_context,
                                         NULL,
                                         G_CALLBACK (ephy_send_message),
-                                        send_message_data, g_free,
+                                        send_message_data, send_message_data_free,
                                         G_TYPE_NONE,
                                         4,
                                         G_TYPE_STRING,

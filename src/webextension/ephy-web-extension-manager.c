@@ -1177,7 +1177,16 @@ get_translation_contents (EphyWebExtension *web_extension)
   g_autofree char *path = ephy_web_extension_get_locale_translation_resource (web_extension);
   g_autofree char *data = path ? ephy_web_extension_get_resource_as_string (web_extension, path) : NULL;
 
-  return data ? g_steal_pointer (&data) : g_strdup ("{}");
+  if (data) {
+    g_autoptr (JsonNode) node = json_from_string (data, NULL);
+
+    /* The renderer cannot tolerate a malformed translations file, so only ship it when
+     * it actually is a JSON object. */
+    if (node && JSON_NODE_HOLDS_OBJECT (node))
+      return g_steal_pointer (&data);
+  }
+
+  return g_strdup ("{}");
 }
 
 static void
