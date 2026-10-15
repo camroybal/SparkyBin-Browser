@@ -37,12 +37,16 @@ on_command_activated (GAction  *action,
   GtkWidget *button;
   const char *command_name = g_object_get_data (G_OBJECT (action), "command-name-json");
 
+  if (!command_name)
+    return;
+
   if (strcmp (command_name, "\"_execute_browser_action\"") == 0) {
     ephy_web_extension_manager_show_browser_action (manager, self);
     return;
   } else if (strcmp (command_name, "\"_execute_page_action\"") == 0) {
     button = ephy_web_extension_manager_get_page_action (manager, self, view);
-    gtk_widget_mnemonic_activate (button, false);
+    if (button)
+      gtk_widget_mnemonic_activate (button, false);
     return;
   }
 
@@ -158,9 +162,11 @@ commands_handler_get_all (EphyWebExtensionSender *sender,
   GHashTableIter iter;
   WebExtensionCommand *command;
 
-  g_hash_table_iter_init (&iter, commands);
-  while (g_hash_table_iter_next (&iter, NULL, (gpointer *)&command))
-    json_array_add_element (rel, command_to_node (command));
+  if (commands) {
+    g_hash_table_iter_init (&iter, commands);
+    while (g_hash_table_iter_next (&iter, NULL, (gpointer *)&command))
+      json_array_add_element (rel, command_to_node (command));
+  }
 
   g_task_return_pointer (task, json_to_string (node, FALSE), g_free);
 }
@@ -322,6 +328,10 @@ ephy_web_extension_api_commands_dispose (EphyWebExtension *self)
   GHashTable *active_commands = get_commands (self);
   GHashTableIter iter;
   WebExtensionCommand *command = NULL;
+
+  /* get_commands() returns NULL if init() was never called or dispose ran twice. */
+  if (!active_commands)
+    return;
 
   /* We load the default commands from the manifest and set them up here. */
   g_hash_table_iter_init (&iter, active_commands);

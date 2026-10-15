@@ -567,7 +567,8 @@ menu_activate_page_button (gpointer user_data)
   EphyWebView *view = EPHY_WEB_VIEW (ephy_shell_get_active_web_view (shell));
   GtkWidget *button = ephy_web_extension_manager_get_page_action (manager, web_extension, view);
 
-  gtk_widget_mnemonic_activate (button, false);
+  if (button)
+    gtk_widget_mnemonic_activate (button, false);
 }
 
 void

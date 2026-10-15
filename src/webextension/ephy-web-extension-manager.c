@@ -1702,7 +1702,9 @@ on_page_attached (AdwTabView *self,
 
   view = ephy_embed_get_web_view (EPHY_EMBED (embed));
   json = ephy_web_extension_api_tabs_create_tab_object (web_extension, view);
-  ephy_web_extension_manager_emit_in_extension_views (manager, web_extension, "tabs.onCreated", json_to_string (json, FALSE));
+  /* create_tab_object() returns NULL when the view has no EphyWindow root. */
+  if (json)
+    ephy_web_extension_manager_emit_in_extension_views (manager, web_extension, "tabs.onCreated", json_to_string (json, FALSE));
 }
 
 static void

@@ -23,8 +23,14 @@
 #include <locale.h>
 
 typedef struct {
+  /* The page is only weakly referenced. GObject automatically replaces this pointer with NULL when
+   * the page is finalized, so it can never be dereferenced after destruction. A strong reference
+   * must not be used here: it would form a reference cycle (page → frame → JSCContext → this
+   * ephy_send_message() closure → back to the page) and leak an entire web page per load. */
   WebKitWebPage *page;
-  WebKitFrame *frame;
+  /* The frame only needs to contribute its id to the message sent to the UI process, so it is
+   * resolved to an id and never tracked as an object. */
+  guint64 frame_id;
   char *guid;
 } EphySendMessageData;
 
@@ -33,20 +39,36 @@ send_message_data_free (gpointer data)
 {
   EphySendMessageData *send_message_data = data;
 
+  /* Only remove the weak reference while the page is still alive; once it is finalized GObject has
+   * already set the pointer to NULL and there is nothing left to remove. */
+  if (send_message_data->page)
+    g_object_remove_weak_pointer (G_OBJECT (send_message_data->page), (gpointer *)&send_message_data->page);
+
   g_clear_pointer (&send_message_data->guid, g_free);
   g_free (send_message_data);
 }
 
 typedef struct {
+  /* A strong reference on each JSCValue keeps the callback protected from garbage collection for
+   * the duration of the asynchronous round-trip: the JS closures backing them are otherwise
+   * unreferenced once the promise executor has returned, so they would be collected and the
+   * extension's promise would never settle. A strong reference does NOT keep the JSCContext alive,
+   * though, and calling into a destroyed context (navigation, iframe removal) would crash. The
+   * weak mirrors are therefore kept alongside: jsc_weak_value_get_value() returns NULL once the
+   * context is destroyed, letting us skip the callback in that case. */
   JSCValue *resolve_callback;
   JSCValue *reject_callback;
+  JSCWeakValue *resolve_mirror;
+  JSCWeakValue *reject_mirror;
 } EphyCallbackData;
 
 static void
 ephy_callback_data_free (EphyCallbackData *data)
 {
-  g_object_unref (data->reject_callback);
-  g_object_unref (data->resolve_callback);
+  g_clear_object (&data->reject_mirror);
+  g_clear_object (&data->reject_callback);
+  g_clear_object (&data->resolve_mirror);
+  g_clear_object (&data->resolve_callback);
   g_free (data);
 }
 
@@ -57,6 +79,8 @@ ephy_callback_data_new (JSCValue *resolve_callback,
   EphyCallbackData *data = g_new (EphyCallbackData, 1);
   data->resolve_callback = g_object_ref (resolve_callback);
   data->reject_callback = g_object_ref (reject_callback);
+  data->resolve_mirror = jsc_weak_value_new (resolve_callback);
+  data->reject_mirror = jsc_weak_value_new (reject_callback);
   return data;
 }
 
@@ -69,27 +93,37 @@ on_send_message_finish (WebKitWebPage *page,
   g_autoptr (GError) error = NULL;
   g_autoptr (WebKitUserMessage) response = NULL;
   g_autoptr (JSCValue) ret = NULL;
+  /* Only call back when the script context is still alive. The weak mirrors clear when the context
+   * is destroyed, while the strong references in callback_data keep the callbacks themselves from
+   * being collected in the meantime. */
+  g_autoptr (JSCValue) resolve = jsc_weak_value_get_value (callback_data->resolve_mirror);
+  g_autoptr (JSCValue) reject = jsc_weak_value_get_value (callback_data->reject_mirror);
 
   response = webkit_web_page_send_message_to_view_finish (page, result, &error);
 
+  /* If the script context that issued the request has been destroyed in the meantime (e.g. the
+   * frame was removed or navigated away) then resolve() is NULL and the associated promise is gone
+   * as well, so there is nothing left to call back into. */
   if (error) {
-    ret = jsc_value_function_call (callback_data->reject_callback, G_TYPE_STRING, error->message, G_TYPE_NONE);
-  } else {
+    if (reject)
+      ret = jsc_value_function_call (reject, G_TYPE_STRING, error->message, G_TYPE_NONE);
+  } else if (resolve) {
     const char *json = webkit_user_message_get_parameters (response) ? g_variant_get_string (webkit_user_message_get_parameters (response), NULL) : "";
     g_autoptr (JSCValue) value = NULL;
-    JSCContext *context = jsc_value_get_context (callback_data->resolve_callback);
+    JSCContext *context = jsc_value_get_context (resolve);
 
     if (strcmp (json, "") == 0) {
       value = jsc_value_new_undefined (context);
-      ret = jsc_value_function_call (callback_data->resolve_callback, JSC_TYPE_VALUE, value, G_TYPE_NONE);
+      ret = jsc_value_function_call (resolve, JSC_TYPE_VALUE, value, G_TYPE_NONE);
     } else if (g_strcmp0 (webkit_user_message_get_name (response), "error") == 0) {
-      ret = jsc_value_function_call (callback_data->reject_callback, G_TYPE_STRING, json, G_TYPE_NONE);
+      if (reject)
+        ret = jsc_value_function_call (reject, G_TYPE_STRING, json, G_TYPE_NONE);
     } else {
       /* An unparsable value must not be handed to the callback, resolve with undefined instead. */
       value = jsc_value_new_from_json (context, json);
       if (!value)
         value = jsc_value_new_undefined (context);
-      ret = jsc_value_function_call (callback_data->resolve_callback, JSC_TYPE_VALUE, value, G_TYPE_NONE);
+      ret = jsc_value_function_call (resolve, JSC_TYPE_VALUE, value, G_TYPE_NONE);
     }
   }
 
@@ -109,8 +143,14 @@ ephy_send_message (const char *function_name,
   g_autofree char *args_json = NULL;
   g_autofree char *message_name = NULL;
 
+  /* This runs as a callback of a web extension script, but the arguments are not validated on the
+   * way in. Normally both callbacks are functions, but if the reject callback is missing we must
+   * not silently drop the call: fall back to the resolve callback so the extension's promise is
+   * still settled instead of being left pending forever. */
   if (!jsc_value_is_function (reject_callback))
-    return; /* Can't reject in this case. */
+    reject_callback = resolve_callback;
+  if (!jsc_value_is_function (reject_callback))
+    return; /* Without any callback the result could not be communicated at all. */
 
   if (!jsc_value_is_array (function_args) || !jsc_value_is_function (resolve_callback)) {
     g_autoptr (JSCValue) ret = jsc_value_function_call (reject_callback, G_TYPE_STRING, "ephy_send_message(): Invalid Arguments", G_TYPE_NONE);
@@ -118,10 +158,19 @@ ephy_send_message (const char *function_name,
     return;
   }
 
+  /* The page is only weakly referenced, so it may already have been destroyed. In practice this
+   * can hardly happen, since this callback executes in the page's own live script context, but we
+   * must not dereference a finalized object. */
+  if (!send_message_data->page) {
+    g_autoptr (JSCValue) ret = jsc_value_function_call (reject_callback, G_TYPE_STRING, "ephy_send_message(): Web page has been destroyed", G_TYPE_NONE);
+    (void)ret;
+    return;
+  }
+
   args_json = jsc_value_to_json (function_args, 0);
   message_name = g_strconcat ("WebExtensions.", function_name, NULL);
   message = webkit_user_message_new (message_name,
-                                     g_variant_new ("(sts)", send_message_data->guid, webkit_frame_get_id (send_message_data->frame), args_json));
+                                     g_variant_new ("(sts)", send_message_data->guid, send_message_data->frame_id, args_json));
 
   webkit_web_page_send_message_to_view (send_message_data->page, message, NULL,
                                         (GAsyncReadyCallback)on_send_message_finish,
@@ -267,8 +316,10 @@ ephy_webextension_install_common_apis (WebKitWebPage *page,
 
   /* global functions */
   send_message_data = g_new (EphySendMessageData, 1);
+  /* Track the page only weakly; see EphySendMessageData for why a reference would be unsafe here. */
   send_message_data->page = page;
-  send_message_data->frame = frame;
+  g_object_add_weak_pointer (G_OBJECT (page), (gpointer *)&send_message_data->page);
+  send_message_data->frame_id = webkit_frame_get_id (frame);
   /* @guid is owned by the caller's GUri, so it must be copied. */
   send_message_data->guid = g_strdup (guid);
   js_function = jsc_value_new_function (js_context,
