@@ -697,16 +697,14 @@ tabs_handler_remove (EphyWebExtensionSender *sender,
       if (tab_id != -1)
         close_tab_id (shell, tab_id);
     }
-
-    g_task_return_pointer (task, NULL, NULL);
-  }
-
-  if ((tab_id = ephy_json_node_get_int (tab_ids)) != -1) {
+  } else if ((tab_id = ephy_json_node_get_int (tab_ids)) != -1) {
     close_tab_id (shell, tab_id);
-    g_task_return_pointer (task, NULL, NULL);
+  } else {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "tabs.remove(): First argument is not a number or array.");
+    return;
   }
 
-  g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "tabs.remove(): First argument is not a number or array.");
+  g_task_return_pointer (task, NULL, NULL);
 }
 
 static void

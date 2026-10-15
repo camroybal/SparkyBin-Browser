@@ -109,7 +109,11 @@ pageaction_handler_seticon (EphyWebExtensionSender *sender,
   /* action can be a GtkButton or GtkMenuButton. They both have a "child" property */
   g_object_get (action, "child", &child, NULL);
 
-  gtk_image_set_from_paintable (GTK_IMAGE (child), GDK_PAINTABLE (texture));
+  if (child) {
+    gtk_image_set_from_paintable (GTK_IMAGE (child), GDK_PAINTABLE (texture));
+    g_object_unref (child);
+  }
+
   g_task_return_pointer (task, NULL, NULL);
 }
 

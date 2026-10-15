@@ -1188,13 +1188,18 @@ load_xpi_thread (GTask        *task,
 
   while (archive_read_next_header (pkg, &entry) == ARCHIVE_OK) {
     int64_t size = archive_entry_size (entry);
-    gsize total_len = 0;
+    gssize total_len = 0;
     g_autofree char *data = NULL;
+
+    /* A size of -1 is used for streamed entries and a negative read result means the entry
+     * is corrupt. Neither can be used to size an allocation or a GBytes length. */
+    if (size <= 0 || size > G_MAXSSIZE / 2)
+      continue;
 
     data = g_malloc0 (size);
     total_len = archive_read_data (pkg, data, size);
 
-    if (total_len > 0) {
+    if (total_len > 0 && (guint64)total_len <= (guint64)size) {
       g_hash_table_insert (resources,
                            g_strdup (archive_entry_pathname (entry)),
                            g_bytes_new_take (g_steal_pointer (&data), total_len));
@@ -1373,7 +1378,7 @@ ephy_web_extension_get_custom_css (EphyWebExtension *self,
 {
   WebExtensionCustomCSS *css = NULL;
 
-  for (GList *list = self->custom_css; list && list->data; list = list->data) {
+  for (GList *list = self->custom_css; list; list = list->next) {
     css = list->data;
 
     if (strcmp (css->code, code) == 0)
