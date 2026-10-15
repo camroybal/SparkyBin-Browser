@@ -49,7 +49,7 @@ G_DEFINE_FINAL_TYPE (EphyAboutHandler, ephy_about_handler, G_TYPE_OBJECT)
 
 #define EPHY_ABOUT_OVERVIEW_MAX_ITEMS 9
 
-#define EPHY_PAGE_TEMPLATE_ABOUT_CSS        "ephy-resource:///org/gnome/epiphany/page-templates/about.css"
+#define EPHY_PAGE_TEMPLATE_ABOUT_CSS        "ephy-resource:///com/sparkybin/browser/page-templates/about.css"
 
 static void
 ephy_about_handler_finalize (GObject *object)
@@ -200,12 +200,12 @@ ephy_about_handler_handle_about (EphyAboutHandler       *handler,
                           "<tr><td class=\"prop-label\">%s</td><td class=\"prop-value\">%d.%d.%d</td></tr>"
                           "</table>"
                           "</div></div></body></html>",
-                          _("About Web"),
+                          _("About SparkyBin Browser"),
                           path ? path : "",
 #if !TECH_PREVIEW
-                          _("Web"),
+                          _("SparkyBin Browser"),
 #else
-                          _("Epiphany Technology Preview"),
+                          _("SparkyBin Browser Technology Preview"),
 #endif
                           version,
                           _("A simple, clean, beautiful view of the web"),
@@ -235,7 +235,7 @@ ephy_about_handler_handle_epiphany (EphyAboutHandler       *handler,
                           "<!-- Terre des Hommes, III: L'Avion, p. 60 -->"
                           "Antoine de Saint-Exupéry"
                           "</div></body></html>",
-                          _("Web"));
+                          _("SparkyBin Browser"));
 
   ephy_about_handler_finish_request (request, data, -1);
 
@@ -484,7 +484,7 @@ history_service_query_urls_cb (EphyHistoryService     *history,
                             "</body></html>\n",
                             path ? path : "",
                             /* Displayed when opening the browser for the first time. */
-                            _("Welcome to Web"), _("Start browsing and your most-visited sites will appear here."));
+                            _("Welcome to SparkyBin Browser"), _("Start browsing and your most-visited sites will appear here."));
     goto out;
   }
 
@@ -600,7 +600,7 @@ ephy_about_handler_handle_incognito (EphyAboutHandler       *handler,
                           "<link href=\""EPHY_PAGE_TEMPLATE_ABOUT_CSS "\" rel=\"stylesheet\" type=\"text/css\">\n"
                           "</head>\n"
                           "<body class=\"incognito-body\">\n"
-                          "  <img class=\"incognito-body-image\" src=\"ephy-resource:///org/gnome/epiphany/page-icons/private-mode.svg\">\n" \
+                          "  <img class=\"incognito-body-image\" src=\"ephy-resource:///com/sparkybin/browser/page-icons/private-mode.svg\">\n" \
                           "  <br/>\n"
                           "  <h1>%s</h1>\n"
                           "  <p>%s</p>\n"

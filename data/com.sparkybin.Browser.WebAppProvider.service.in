@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=com.sparkybin.Browser.WebAppProvider
+Exec=@libexecdir@/sparkybin-browser-webapp-provider

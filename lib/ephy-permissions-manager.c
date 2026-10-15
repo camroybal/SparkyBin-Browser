@@ -128,12 +128,12 @@ ephy_permissions_manager_get_settings_for_origin (EphyPermissionsManager *manage
   if (pos)
     *pos = '\0';
 
-  origin_path = g_strdup_printf ("/org/gnome/epiphany/permissions/%s/%s/%u/",
+  origin_path = g_strdup_printf ("/com/sparkybin/browser/permissions/%s/%s/%u/",
                                  trimmed_protocol,
                                  webkit_security_origin_get_host (security_origin),
                                  webkit_security_origin_get_port (security_origin));
 
-  settings = g_settings_new_with_backend_and_path ("org.gnome.Epiphany.permissions", manager->backend, origin_path);
+  settings = g_settings_new_with_backend_and_path ("com.sparkybin.Browser.permissions", manager->backend, origin_path);
   g_free (trimmed_protocol);
   g_free (origin_path);
   webkit_security_origin_unref (security_origin);
@@ -322,7 +322,7 @@ group_name_to_security_origin (const char *group)
   char **tokens;
   WebKitSecurityOrigin *origin = NULL;
 
-  /* Should be of form org/gnome/epiphany/permissions/http/example.com/0 */
+  /* Should be of form com/sparkybin/browser/permissions/http/example.com/0 */
   tokens = g_strsplit (group, "/", -1);
   if (g_strv_length (tokens) == 7 && tokens[4] && tokens[5] && tokens[6])
     origin = webkit_security_origin_new (tokens[4], tokens[5], atoi (tokens[6]));

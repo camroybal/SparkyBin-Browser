@@ -44,7 +44,7 @@
   </steps>
 
   <p xml:id="tabs"><em>Tabs</em> are used to view more than one web page in one
-  window. When you first start up <app>Web</app>, you will not be shown any
+  window. When you first start up <app>SparkyBin Browser</app>, you will not be shown any
   tabs. To <em>open a new tab</em>, press the new tab button at the top left of
   the screen. Once the new tab is open, you can use it as you would normally use
   a new window.</p>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder SparkyBin Browser symbolic icon source. Replace with your own final artwork. -->
+<svg height="16px" width="16px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="#2e3436" stroke-width="1.5">
+    <circle cx="8" cy="8" r="6"/>
+    <ellipse cx="8" cy="8" rx="2.6" ry="6"/>
+    <path d="M2 8h12"/>
+  </g>
+</svg>

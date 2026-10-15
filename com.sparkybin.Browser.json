@@ -1,13 +1,13 @@
 {
-    "app-id" : "org.gnome.Epiphany.Devel",
+    "app-id" : "com.sparkybin.Browser.Devel",
     "runtime" : "org.gnome.Platform",
     "runtime-version" : "master",
     "sdk" : "org.gnome.Sdk",
-    "command" : "epiphany",
+    "command" : "sparkybin-browser",
     "tags" : [
         "nightly"
     ],
-    "desktop-file-name-suffix" : " (Epiphany Technology Preview)",
+    "desktop-file-name-suffix" : " (SparkyBin Browser Technology Preview)",
     "finish-args" : [
         "--device=dri",
         "--device=input",
@@ -17,7 +17,7 @@
         "--socket=fallback-x11",
         "--socket=pulseaudio",
         "--socket=wayland",
-        "--own-name=org.gnome.Epiphany.WebAppProvider",
+        "--own-name=com.sparkybin.Browser.WebAppProvider",
         "--require-version=1.16.0"
     ],
     "modules" : [
@@ -53,7 +53,7 @@
             ]
         },
         {
-            "name" : "epiphany",
+            "name" : "sparkybin-browser",
             "buildsystem" : "meson",
             "builddir" : true,
             "config-opts" : [
@@ -69,13 +69,13 @@
                     "--socket=fallback-x11",
                     "--socket=pulseaudio",
                     "--socket=wayland",
-                    "--own-name=org.gnome.Epiphany.WebAppProvider"
+                    "--own-name=com.sparkybin.Browser.WebAppProvider"
                 ]
             },
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "https://gitlab.gnome.org/GNOME/epiphany.git",
+                    "url" : "https://github.com/sparkybin/sparkybin-browser.git",
                     "branch" : "main",
                     "disable-shallow-clone" : true
                 }

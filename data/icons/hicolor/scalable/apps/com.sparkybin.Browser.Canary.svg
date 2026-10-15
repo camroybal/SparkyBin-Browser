@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder SparkyBin Browser (Canary) icon. Replace with your own final artwork. -->
+<svg height="128px" width="128px" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0a03c"/>
+      <stop offset="1" stop-color="#c15a12"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" ry="28" fill="url(#bg)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="5" opacity="0.9">
+    <circle cx="64" cy="60" r="30"/>
+    <ellipse cx="64" cy="60" rx="13" ry="30"/>
+    <path d="M34 60h60"/>
+  </g>
+  <path d="M92 96l4.5 9.6L107 110l-9.4 4.4L93 124l-4.7-9.6L79 110l9.7-4.4z" fill="#ffffff"/>
+</svg>

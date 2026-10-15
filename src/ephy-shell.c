@@ -603,7 +603,7 @@ ephy_shell_startup (GApplication *application)
 
     shell->style_provider = GTK_STYLE_PROVIDER (gtk_css_provider_new ());
     gtk_css_provider_load_from_resource (GTK_CSS_PROVIDER (shell->style_provider),
-                                         "/org/gnome/Epiphany/style-elementary.css");
+                                         "/com/sparkybin/Browser/style-elementary.css");
 
     gtk_style_context_add_provider_for_display (gdk_display_get_default (),
                                                 shell->style_provider,
@@ -1464,7 +1464,7 @@ _ephy_shell_create_instance (EphyEmbedShellMode mode)
   ephy_shell = EPHY_SHELL (g_object_new (EPHY_TYPE_SHELL,
                                          "application-id", id,
                                          "mode", mode,
-                                         "resource-base-path", "/org/gnome/Epiphany",
+                                         "resource-base-path", "/com/sparkybin/Browser",
                                          NULL));
   /* FIXME weak ref */
   g_assert (ephy_shell);

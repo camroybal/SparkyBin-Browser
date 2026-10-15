@@ -1,5 +1,5 @@
 {
-    "app-id" : "org.gnome.Epiphany.Canary",
+    "app-id" : "com.sparkybin.Browser.Canary",
     "runtime" : "org.gnome.Platform",
     "runtime-version" : "master",
     "sdk" : "org.gnome.Sdk",
@@ -20,7 +20,7 @@
         "--socket=fallback-x11",
         "--socket=pulseaudio",
         "--socket=wayland",
-        "--own-name=org.gnome.Epiphany.WebAppProvider",
+        "--own-name=com.sparkybin.Browser.WebAppProvider",
         "--require-version=1.16.0"
     ],
     "modules" : [
@@ -82,7 +82,7 @@
             ]
         },
         {
-            "name" : "epiphany",
+            "name" : "sparkybin-browser",
             "buildsystem" : "meson",
             "config-opts" : [
                 "-Dprofile=Canary"
@@ -90,13 +90,13 @@
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "https://gitlab.gnome.org/GNOME/epiphany.git",
+                    "url" : "https://github.com/sparkybin/sparkybin-browser.git",
                     "branch" : "main",
                     "disable-shallow-clone" : true
                 }
             ],
             "post-install" : [
-                "sed -i 's;Exec=epiphany;Exec=ephy-wrapper;g' /app/share/applications/org.gnome.Epiphany.Canary.desktop"
+                "sed -i 's;Exec=sparkybin-browser;Exec=ephy-wrapper;g' /app/share/applications/com.sparkybin.Browser.Canary.desktop"
             ]
         },
         {
@@ -112,7 +112,7 @@
                     "commands" : [
                         "export WEBKIT_INJECTED_BUNDLE_PATH=/app/lib/webkitgtk-6.0/injected-bundle",
                         "export WEBKIT_EXEC_PATH=/app/libexec",
-                        "exec epiphany \"$@\""
+                        "exec sparkybin-browser \"$@\""
                     ]
                 }
             ]

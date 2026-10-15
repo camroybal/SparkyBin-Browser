@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SparkyBin Browser is a rebranded fork of GNOME Web (Epiphany).
+  The original project metadata is preserved in COPYING and the source headers.
+-->
 <Project xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/"
          xmlns:gnome="http://api.gnome.org/doap-extensions#"
          xmlns="http://usefulinc.com/ns/doap#">
-  <name xml:lang="en">Epiphany</name>
+  <name xml:lang="en">SparkyBin Browser</name>
   <shortdesc xml:lang="en">A simple, clean, beautiful view of the Web</shortdesc>
   <description xml:lang="en">A simple web browser based on the popular WebKit rendering engine.</description>
   <category rdf:resource="http://api.gnome.org/doap-extensions#core" />
@@ -12,23 +16,13 @@
   <platform>GTK 4</platform>
   <platform>Libadwaita</platform>
 
-  <homepage rdf:resource="https://apps.gnome.org/Epiphany" />
-  <support-forum rdf:resource="https://discourse.gnome.org/tag/epiphany" />
-  <download-page rdf:resource="https://download.gnome.org/sources/epiphany/" />
-  <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/epiphany/issues/" />
+  <homepage rdf:resource="https://github.com/sparkybin/sparkybin-browser" />
+  <bug-database rdf:resource="https://github.com/sparkybin/sparkybin-browser/issues/" />
 
   <maintainer>
     <foaf:Person>
-      <foaf:name>Jan-Michael Brummer</foaf:name>
-      <foaf:mbox rdf:resource="mailto:jbrummer@gnome.org" />
-      <gnome:userid>jbrummer</gnome:userid>
-    </foaf:Person>
-  </maintainer>
-  <maintainer>
-    <foaf:Person>
-      <foaf:name>Michael Catanzaro</foaf:name>
-      <foaf:mbox rdf:resource="mailto:mcatanzaro@gnome.org" />
-      <gnome:userid>mcatanzaro</gnome:userid>
+      <foaf:name>SparkyBin</foaf:name>
+      <foaf:mbox rdf:resource="mailto:sparkybin@example.com" />
     </foaf:Person>
   </maintainer>
 </Project>

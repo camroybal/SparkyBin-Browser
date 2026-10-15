@@ -43,7 +43,7 @@ static void
 migrate_pre_flatpak_webapps (void)
 {
   /* Rename webapp folder, desktop file name and content from
-   *  org.gnome.Epiphany.WebApp-${id}
+   *  com.sparkybin.Browser.WebApp-${id}
    * to
    *  ${APP_ID}.WebApp_${hash}
    *
@@ -93,11 +93,11 @@ migrate_pre_flatpak_webapps (void)
     const char *name;
 
     name = g_file_info_get_name (info);
-    if (!g_str_has_prefix (name, "org.gnome.Epiphany.WebApp-"))
+    if (!g_str_has_prefix (name, "com.sparkybin.Browser.WebApp-"))
       goto next;
 
-    /* the directory is either org.gnome.Epiphany.WebApp-name-checksum or
-     * org.gnome.Epiphany.WebApp-checksum but unfortunately name can include a
+    /* the directory is either com.sparkybin.Browser.WebApp-name-checksum or
+     * com.sparkybin.Browser.WebApp-checksum but unfortunately name can include a
      * hyphen
      */
     {
@@ -176,7 +176,7 @@ migrate_pre_flatpak_webapps (void)
       }
       /* The StartupWMClass will not always have been corrected by the
        * find-and-replace above, since it has the form
-       * org.gnome.Epiphany.WebApp-<normalized_name>-<checksum> whereas the
+       * com.sparkybin.Browser.WebApp-<normalized_name>-<checksum> whereas the
        * gapplication id sometimes omits the <normalized_name> part
        */
       g_key_file_set_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_STARTUP_WM_CLASS, new_name);
@@ -403,8 +403,8 @@ main (int   argc,
   g_assert (EPHY_PROFILE_MIGRATION_VERSION - EPHY_MINIMUM_MIGRATION_VERSION + 1 == G_N_ELEMENTS (migrators));
 
   option_group = g_option_group_new ("ephy-profile-migrator",
-                                     N_("Web profile migrator"),
-                                     N_("Web profile migrator options"),
+                                     N_("SparkyBin Browser profile migrator"),
+                                     N_("SparkyBin Browser profile migrator options"),
                                      NULL, NULL);
 
   g_option_group_set_translation_domain (option_group, GETTEXT_PACKAGE);

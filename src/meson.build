@@ -185,7 +185,7 @@ search_provider_sources = [
   search_provider_codegen
 ]
 
-executable('epiphany-search-provider',
+executable('sparkybin-browser-search-provider',
   search_provider_sources,
   dependencies: ephymain_dep,
   install: true,
@@ -194,8 +194,8 @@ executable('epiphany-search-provider',
 )
 
 webapp_codegen = gnome.gdbus_codegen('ephy-webapp-provider-generated',
-  'webapp-provider/org.gnome.Epiphany.WebAppProvider.xml',
-  interface_prefix: 'org.gnome.Epiphany',
+  'webapp-provider/com.sparkybin.Browser.WebAppProvider.xml',
+  interface_prefix: 'com.sparkybin.Browser',
   namespace: 'Ephy'
 )
 
@@ -205,7 +205,7 @@ webapp_provider_sources = [
   webapp_codegen
 ]
 
-executable('epiphany-webapp-provider',
+executable('sparkybin-browser-webapp-provider',
   webapp_provider_sources,
   dependencies: ephymain_dep,
   install: true,
@@ -231,15 +231,15 @@ resources = gnome.compile_resources('epiphany-resources',
     ]
 )
 
-epiphany_sources = [
+sparkybin_browser_sources = [
   'ephy-main.c',
   resources,
   highlightjs_resources,
   readability_resources
 ]
 
-epiphany = executable('epiphany',
-  epiphany_sources,
+sparkybin_browser = executable('sparkybin-browser',
+  sparkybin_browser_sources,
   dependencies: ephymain_dep,
   install: true,
   install_rpath: pkglibdir

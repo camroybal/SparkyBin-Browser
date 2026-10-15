@@ -1209,7 +1209,7 @@ ephy_location_entry_class_init (EphyLocationEntryClass *klass)
                                      G_TYPE_NONE);
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/org/gnome/epiphany/gtk/location-entry.ui");
+                                               "/com/sparkybin/browser/gtk/location-entry.ui");
 
   gtk_widget_class_bind_template_child (widget_class, EphyLocationEntry, stack);
   gtk_widget_class_bind_template_child (widget_class, EphyLocationEntry, text);

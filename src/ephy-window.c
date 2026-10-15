@@ -3772,7 +3772,7 @@ setup_tab_view (EphyWindow *window)
 
   gtk_widget_set_vexpand (GTK_WIDGET (tab_view), TRUE);
 
-  builder = gtk_builder_new_from_resource ("/org/gnome/epiphany/gtk/notebook-context-menu.ui");
+  builder = gtk_builder_new_from_resource ("/com/sparkybin/browser/gtk/notebook-context-menu.ui");
 
   adw_tab_view_set_menu_model (view, G_MENU_MODEL (gtk_builder_get_object (builder, "notebook-menu")));
 
@@ -3889,9 +3889,9 @@ add_default_browser_question (EphyWindow *window)
 
   adw_alert_dialog_set_heading (ADW_ALERT_DIALOG (dialog), _("Set as Default Browser?"));
 #if !TECH_PREVIEW
-  adw_alert_dialog_set_body (ADW_ALERT_DIALOG (dialog), _("Use Web as your default web browser and for opening external links"));
+  adw_alert_dialog_set_body (ADW_ALERT_DIALOG (dialog), _("Use SparkyBin Browser as your default web browser and for opening external links"));
 #else
-  adw_alert_dialog_set_body (ADW_ALERT_DIALOG (dialog), _("Use Epiphany Technology Preview as your default web browser and for opening external links"));
+  adw_alert_dialog_set_body (ADW_ALERT_DIALOG (dialog), _("Use SparkyBin Browser Technology Preview as your default web browser and for opening external links"));
 #endif
 
   adw_alert_dialog_add_responses (ADW_ALERT_DIALOG (dialog),
@@ -4669,7 +4669,7 @@ ephy_window_constructed (GObject *object)
   g_signal_connect_object (pan_gesture, "pan", G_CALLBACK (pan_cb), window, G_CONNECT_SWAPPED);
   gtk_widget_add_controller (GTK_WIDGET (window), GTK_EVENT_CONTROLLER (pan_gesture));
 
-  builder = gtk_builder_new_from_resource ("/org/gnome/epiphany/gtk/tab-overview-menu.ui");
+  builder = gtk_builder_new_from_resource ("/com/sparkybin/browser/gtk/tab-overview-menu.ui");
 
   adw_tab_overview_set_enable_new_tab (ADW_TAB_OVERVIEW (window->overview), TRUE);
   adw_tab_overview_set_secondary_menu (ADW_TAB_OVERVIEW (window->overview),

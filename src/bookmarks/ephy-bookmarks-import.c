@@ -125,7 +125,7 @@ ephy_bookmarks_import (EphyBookmarksManager  *manager,
     g_set_error (error,
                  BOOKMARKS_IMPORT_ERROR,
                  BOOKMARKS_IMPORT_ERROR_TAGS,
-                 _("File is not a valid Epiphany bookmarks file: missing tags table"));
+                 _("File is not a valid SparkyBin Browser bookmarks file: missing tags table"));
     res = FALSE;
     goto out;
   }
@@ -159,7 +159,7 @@ ephy_bookmarks_import (EphyBookmarksManager  *manager,
     g_set_error (error,
                  BOOKMARKS_IMPORT_ERROR,
                  BOOKMARKS_IMPORT_ERROR_BOOKMARKS,
-                 _("File is not a valid Epiphany bookmarks file: missing bookmarks table"));
+                 _("File is not a valid SparkyBin Browser bookmarks file: missing bookmarks table"));
     res = FALSE;
     goto out;
   }

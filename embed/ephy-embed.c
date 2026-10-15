@@ -825,7 +825,7 @@ ephy_embed_constructed (GObject *object)
     GtkWidget *banner;
 
     /* Translators: this means WebDriver control. */
-    banner = adw_banner_new (_("Web is being controlled by automation"));
+    banner = adw_banner_new (_("SparkyBin Browser is being controlled by automation"));
     adw_banner_set_revealed (ADW_BANNER (banner), TRUE);
 
     ephy_embed_add_top_widget (embed, banner, EPHY_EMBED_TOP_WIDGET_POLICY_RETAIN_ON_TRANSITION);
