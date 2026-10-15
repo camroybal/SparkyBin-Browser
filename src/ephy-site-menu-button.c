@@ -178,7 +178,7 @@ ephy_site_menu_button_class_init (EphySiteMenuButtonClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/epiphany/gtk/site-menu-button.ui");
+  gtk_widget_class_set_template_from_resource (widget_class, "/com/sparkybin/browser/gtk/site-menu-button.ui");
 
   object_class->dispose = ephy_site_menu_button_dispose;
 

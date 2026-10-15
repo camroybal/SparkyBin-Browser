@@ -55,35 +55,35 @@
 #define NAME_ON_CARD_KEY   "credit-card-name-on-card"
 #define CARD_NUMBER_KEY    "credit-card-number"
 
-#define FIRSTNAME_LABEL "GNOME Web Autofill - Firstname"
-#define LASTNAME_LABEL  "GNOME Web Autofill - Lastname"
-#define FULLNAME_LABEL  "GNOME Web Autofill - Fullname"
-#define USERNAME_LABEL  "GNOME Web Autofill - Username"
-#define EMAIL_LABEL     "GNOME Web Autofill - Email"
-#define PHONE_LABEL     "GNOME Web Autofill - Phone"
+#define FIRSTNAME_LABEL "SparkyBin Browser Autofill - Firstname"
+#define LASTNAME_LABEL  "SparkyBin Browser Autofill - Lastname"
+#define FULLNAME_LABEL  "SparkyBin Browser Autofill - Fullname"
+#define USERNAME_LABEL  "SparkyBin Browser Autofill - Username"
+#define EMAIL_LABEL     "SparkyBin Browser Autofill - Email"
+#define PHONE_LABEL     "SparkyBin Browser Autofill - Phone"
 
-#define STREET_ADDRESS_LABEL "GNOME Web Autofill - Street Address"
-#define COUNTRY_CODE_LABEL   "GNOME Web Autofill - Country Code"
-#define COUNTRY_NAME_LABEL   "GNOME Web Autofill - Country Name"
-#define ORGANIZATION_LABEL   "GNOME Web Autofill - Organization"
-#define POSTAL_CODE_LABEL    "GNOME Web Autofill - Postal Code"
-#define STATE_LABEL          "GNOME Web Autofill - State"
-#define CITY_LABEL           "GNOME Web Autofill - City"
+#define STREET_ADDRESS_LABEL "SparkyBin Browser Autofill - Street Address"
+#define COUNTRY_CODE_LABEL   "SparkyBin Browser Autofill - Country Code"
+#define COUNTRY_NAME_LABEL   "SparkyBin Browser Autofill - Country Name"
+#define ORGANIZATION_LABEL   "SparkyBin Browser Autofill - Organization"
+#define POSTAL_CODE_LABEL    "SparkyBin Browser Autofill - Postal Code"
+#define STATE_LABEL          "SparkyBin Browser Autofill - State"
+#define CITY_LABEL           "SparkyBin Browser Autofill - City"
 
 #define CARD_EXPDATE_YEAR_YYYY_LABEL \
-        "GNOME Web Autofill - Credit Card Year Expiration Date - YYYY"
+        "SparkyBin Browser Autofill - Credit Card Year Expiration Date - YYYY"
 #define CARD_EXPDATE_MONTH_MM_LABEL \
-        "GNOME Web Autofill - Credit Card Month Expiration Date - MM"
+        "SparkyBin Browser Autofill - Credit Card Month Expiration Date - MM"
 #define CARD_EXPDATE_MONTH_M_LABEL \
-        "GNOME Web Autofill - Credit Card Month Expiration Date - M"
+        "SparkyBin Browser Autofill - Credit Card Month Expiration Date - M"
 #define CARD_EXPDATE_YEAR_YY_LABEL \
-        "GNOME Web Autofill - Credit Card Year Expiration Date - YY"
+        "SparkyBin Browser Autofill - Credit Card Year Expiration Date - YY"
 
-#define CARD_TYPE_CODE_LABEL "GNOME Web Autofill - Credit Card Type Code"
-#define CARD_TYPE_NAME_LABEL "GNOME Web Autofill - Credit Card Type Name"
-#define CARD_EXPDATE_LABEL   "GNOME Web Autofill - Credit Card Expiration Date"
-#define NAME_ON_CARD_LABEL   "GNOME Web Autofill - Credit Card Name on Card"
-#define CARD_NUMBER_LABEL    "GNOME Web Autofill - Credit Card Number"
+#define CARD_TYPE_CODE_LABEL "SparkyBin Browser Autofill - Credit Card Type Code"
+#define CARD_TYPE_NAME_LABEL "SparkyBin Browser Autofill - Credit Card Type Name"
+#define CARD_EXPDATE_LABEL   "SparkyBin Browser Autofill - Credit Card Expiration Date"
+#define NAME_ON_CARD_LABEL   "SparkyBin Browser Autofill - Credit Card Name on Card"
+#define CARD_NUMBER_LABEL    "SparkyBin Browser Autofill - Credit Card Number"
 
 #define EPHY_AUTOFILL_SCHEMA get_schema ()
 

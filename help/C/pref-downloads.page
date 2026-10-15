@@ -58,7 +58,7 @@
 
   <note style="important">
     <p>It is not possible to choose where to save downloads if you are using Flatpak
-    to run <app>Web</app>. Downloads will always be saved in your
+    to run <app>SparkyBin Browser</app>. Downloads will always be saved in your
     <file>Downloads</file> folder.</p>
   </note>
 

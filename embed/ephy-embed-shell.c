@@ -706,10 +706,10 @@ ephy_resource_request_cb (WebKitURISchemeRequest *request)
    * needed for our alternate HTML error pages.
    */
   if (g_str_has_prefix (uri, "ephy-resource:") ||
-      g_str_has_prefix (path, "/org/gnome/epiphany/page-icons/") ||
-      g_str_has_prefix (path, "/org/gnome/epiphany/page-templates/") ||
-      (g_str_has_prefix (uri, "ephy-reader:") && g_str_has_prefix (path, "/org/gnome/epiphany/readability/")) ||
-      (g_str_has_prefix (uri, EPHY_VIEW_SOURCE_SCHEME ":") && g_str_has_prefix (path, "/org/gnome/epiphany/highlightjs/"))) {
+      g_str_has_prefix (path, "/com/sparkybin/browser/page-icons/") ||
+      g_str_has_prefix (path, "/com/sparkybin/browser/page-templates/") ||
+      (g_str_has_prefix (uri, "ephy-reader:") && g_str_has_prefix (path, "/com/sparkybin/browser/readability/")) ||
+      (g_str_has_prefix (uri, EPHY_VIEW_SOURCE_SCHEME ":") && g_str_has_prefix (path, "/com/sparkybin/browser/highlightjs/"))) {
     stream = g_resources_open_stream (path, 0, &error);
     if (stream)
       webkit_uri_scheme_request_finish (request, stream, size, NULL);
@@ -719,7 +719,7 @@ ephy_resource_request_cb (WebKitURISchemeRequest *request)
   }
 
   error = g_error_new (WEBKIT_NETWORK_ERROR, WEBKIT_NETWORK_ERROR_FAILED,
-                       _("URI %s not authorized to access Epiphany resource %s"),
+                       _("URI %s not authorized to access SparkyBin Browser resource %s"),
                        uri, path);
   webkit_uri_scheme_request_finish_error (request, error);
 }

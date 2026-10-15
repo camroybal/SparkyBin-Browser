@@ -1,5 +1,5 @@
 ========
-epiphany
+sparkybin-browser
 ========
 
 ------------------------------------------
@@ -8,19 +8,19 @@ A simple, clean, beautiful view of the web
 
 :Date: May 2025
 :Copyright: Copyright 2006-2025 GNOME Foundation
+:Copyright: Copyright 2026 SparkyBin
 :Manual section: 1
 
 SYNOPSIS
 --------
 
-|  **epiphany** [*OPTION*...] [*URL*...]
+|  **sparkybin-browser** [*OPTION*...] [*URL*...]
 
 DESCRIPTION
 -----------
 
-**epiphany** is the codename of GNOME Web, the web browser designed for the
-GNOME desktop. It offers first-class GNOME integration, using WebKitGTK for web
-rendering.
+**sparkybin-browser** is the SparkyBin Browser, a web browser based on the
+WebKitGTK rendering engine. It is a rebranded fork of GNOME Web (Epiphany).
 
 OPTIONS
 -------
@@ -65,13 +65,13 @@ OPTIONS
 
   Show version
   
-Epiphany has a comprehensive help system.  Run the browser
+SparkyBin Browser has a comprehensive help system.  Run the browser
 and select ``Help`` from the menu.
 
 AUTHOR
 ------
 
-Epiphany has been developed by Marco Pesenti Gritti (in memoriam),
-Christian Persch, Xan Lopez, Carlos Garcia Campos, Claudio Saavedra,
-Michael Catanzaro, Jan-Michael Brummer, Alice Mikhaylenko,
-Patrick Griffis, and many others.
+SparkyBin Browser is a fork of GNOME Web (Epiphany), which has been developed
+by Marco Pesenti Gritti (in memoriam), Christian Persch, Xan Lopez, Carlos
+Garcia Campos, Claudio Saavedra, Michael Catanzaro, Jan-Michael Brummer, Alice
+Mikhaylenko, Patrick Griffis, and many others.

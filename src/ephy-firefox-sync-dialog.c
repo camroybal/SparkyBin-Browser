@@ -1104,7 +1104,7 @@ ephy_firefox_sync_dialog_class_init (EphyFirefoxSyncDialogClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/org/gnome/epiphany/gtk/firefox-sync-dialog.ui");
+                                               "/com/sparkybin/browser/gtk/firefox-sync-dialog.ui");
 
   object_class->finalize = prefs_sync_page_finalize;
 

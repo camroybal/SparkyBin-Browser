@@ -1019,7 +1019,7 @@ ephy_history_dialog_class_init (EphyHistoryDialogClass *klass)
   g_object_class_install_properties (object_class, G_N_ELEMENTS (obj_properties), obj_properties);
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/org/gnome/epiphany/gtk/history-dialog.ui");
+                                               "/com/sparkybin/browser/gtk/history-dialog.ui");
 
   /* UI Elements */
   gtk_widget_class_bind_template_child (widget_class, EphyHistoryDialog, header_bars_stack);

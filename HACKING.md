@@ -1,10 +1,10 @@
-Here are some tips to ease your introduction to Epiphany development.
+Here are some tips to ease your introduction to SparkyBin Browser development.
 
 # Building the Code
 
-Epiphany often requires an unstable development release of WebKit to build
+SparkyBin Browser often requires an unstable development release of WebKit to build
 successfully. If you're not sure how to handle this, refer to the
-[development wiki page](https://welcome.gnome.org/app/Epiphany) for
+[GNOME Web development wiki page](https://welcome.gnome.org/app/Epiphany) for
 suggestions.
 
 # Code Style
@@ -68,7 +68,7 @@ you go out of your way to do so.
 
 ## GtkApplication and EphyShell
 
-Epiphany has one singleton `EphyShell` object. Its inheritance hierarchy is:
+SparkyBin Browser has one singleton `EphyShell` object. Its inheritance hierarchy is:
 
 ```
  - GApplication
@@ -90,7 +90,7 @@ is accessible anywhere from `embed/` or `src/`. So if you have global stuff
 that you need to access from `embed/`, you need to put it in `EphyEmbedShell`,
 not `EphyShell`.
 
-## Important Epiphany Objects
+## Important SparkyBin Browser Objects
 
 `EphyWindow` is a subclass of `GtkApplicationWindow`, which is a subclass of
 `GtkWindow`. It's the window. You can have any number of windows open at a time.
@@ -107,13 +107,13 @@ WebKitGTK is a WebKit port that provides a GTK API wrapper around WebKit.
 
 WebKit is really nice. It encapsulates 95% of the complexity of building a web
 browser, like the JavaScript engine, HTML layout engine, and actually rendering
-the webpage. Epiphany only has to deal with the remaining 5%. The most important
+the webpage. SparkyBin Browser only has to deal with the remaining 5%. The most important
 WebKitGTK objects are:
 
  * `WebKitWebView` (superclass of `EphyWebView`). Displays the web.
  * `WebKitWebContext`, a global object that manages shared state among web views.
 
-Epiphany has one `EphyWebView` per browser tab. It has exactly one
+SparkyBin Browser has one `EphyWebView` per browser tab. It has exactly one
 `WebKitWebContext`, stored by `EphyEmbedShell`. WARNING: you need to be careful
 to use the web context from `EphyEmbedShell` when using a WebKit API that
 expects a `WebKitWebContext`. Do not use WebKit's default `WebKitWebContext`;
@@ -139,32 +139,32 @@ the web views are "related" and share the same WebKitWebProcess. Additionally,
 WebKit will swap a view from one web process to another when navigating between
 different domains.
 
-Epiphany uses GtkApplication to ensure uniqueness, so you usually only have one
+SparkyBin Browser uses GtkApplication to ensure uniqueness, so you usually only have one
 UI process running at a time. An exception is if you use incognito mode, or
 private profile mode (which is only available from the command line). In such
-cases, there is no shared state with the main Epiphany browser process.
+cases, there is no shared state with the main SparkyBin Browser browser process.
 
-## Epiphany Web Process Extension
+## SparkyBin Browser Web Process Extension
 
-For some Epiphany features, we need to run code in the web process. This code is
+For some SparkyBin Browser features, we need to run code in the web process. This code is
 called the "web process extension" and lives in `embed/web-process-extension/`.
 It is compiled into a shared library `libephywebprocessextension.so` and
 installed in `$(pkglibdir)` (e.g. `/usr/lib64/epiphany`). `EphyEmbedShell` tells
 WebKit to look for extensions in that location using
-`webkit_web_context_set_web_process_extensions_directory()`. Now the Epiphany UI process
+`webkit_web_context_set_web_process_extensions_directory()`. Now the SparkyBin Browser UI process
 and web process extension can communicate back and forth via the WebKit IPC
 functions webkit_web_context_send_message_to_all_extensions(),
 webkit_web_view_send_message_to_page(), webkit_web_process_extension_send_message_to_context(),
 and webkit_web_page_send_message_to_view().
 
 If you are making changes to the web process extension, you'll need to enable
-developer mode as described below so that Epiphany will look for the shared
+developer mode as described below so that SparkyBin Browser will look for the shared
 library in your build directory, instead of using the one from the installed location,
-which would correspond to your installed Epiphany's web process extension. So if
+which would correspond to your installed SparkyBin Browser's web process extension. So if
 changes you make to the web process extension (or its javascript files) aren't
 picked up, it means you didn't enable developer mode.
 
-Epiphany uses script message handlers as an additional form of IPC. This allows
+SparkyBin Browser uses script message handlers as an additional form of IPC. This allows
 the web extension to send a `JSCValue` to the UI process, which is received in
 `EphyEmbedShell`.
 

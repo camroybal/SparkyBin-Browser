@@ -101,7 +101,7 @@ option_version_cb (const gchar  *option_name,
                    gpointer      data,
                    GError      **error)
 {
-  g_print ("%s %s\n", _("Web"), VERSION);
+  g_print ("%s %s\n", _("SparkyBin Browser"), VERSION);
 
   exit (EXIT_SUCCESS);
   return FALSE;
@@ -265,8 +265,8 @@ main (int   argc,
 
   option_context = g_option_context_new ("");
   option_group = g_option_group_new ("epiphany",
-                                     N_("Web"),
-                                     N_("Web options"),
+                                     N_("SparkyBin Browser"),
+                                     N_("SparkyBin Browser Options"),
                                      NULL, NULL);
 
   g_option_group_set_translation_domain (option_group, GETTEXT_PACKAGE);
@@ -430,7 +430,7 @@ main (int   argc,
 
   if (mode == EPHY_EMBED_SHELL_MODE_BROWSER || mode == EPHY_EMBED_SHELL_MODE_INCOGNITO) {
     g_set_prgname ("epiphany");
-    g_set_application_name (_("Web"));
+    g_set_application_name (_("SparkyBin Browser"));
 
     gtk_window_set_default_icon_name (APPLICATION_ID);
   }

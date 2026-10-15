@@ -1,0 +1,76 @@
+SparkyBin Browser
+=================
+
+This product is a modified version of GNOME Web (Epiphany).
+
+    Upstream project : GNOME Web (Epiphany)
+    Upstream source  : https://gitlab.gnome.org/GNOME/epiphany
+    Upstream version : 51.1
+    Upstream license : GNU General Public License v3.0 or later
+
+    This fork       : SparkyBin Browser
+    Modification date: 2026-10-15
+
+License
+-------
+
+SparkyBin Browser is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+SparkyBin Browser is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
+
+The full license text is in the COPYING file, which is retained unmodified.
+All original copyright notices in the source files are retained.
+
+Changes made relative to upstream
+---------------------------------
+
+Per GPLv3 section 5(a), this notice records that the following significant
+changes were made when creating SparkyBin Browser from GNOME Web (Epiphany):
+
+  * Renamed the application and all user-visible branding from
+    "GNOME Web" / "Epiphany" to "SparkyBin Browser".
+  * Changed the application ID from `org.gnome.Epiphany` to
+    `com.sparkybin.Browser`, including all derived D-Bus names, GSettings
+    schema IDs and paths, GResource prefixes, and object paths.
+  * Changed the executable name from `epiphany` to `sparkybin-browser`.
+  * Replaced the application icon artwork with new placeholder artwork.
+  * Updated the AppStream metadata, desktop entry, D-Bus service files,
+    GSettings schema, Doxygen/DOAP metadata, manual page, help pages, and
+    build system to use the new name and identifiers.
+  * Changed developer/organization metadata, homepage, and bug tracker URLs.
+
+Trademarks
+----------
+
+"GNOME", "GTK", "Flatpak", and "Flathub" are trademarks of the GNOME
+Foundation. They are used in this project only to factually refer to the
+software and platforms that this project is based on or runs on.
+
+SparkyBin Browser is an independent project and is not affiliated with,
+authorized by, sponsored by, or otherwise approved by the GNOME Foundation.
+
+Placeholders to review before release
+-------------------------------------
+
+The following values were set to placeholders during the rebrand and should be
+reviewed and replaced with the project's real details:
+
+  * Homepage, bug tracker, and download URLs
+    (`https://github.com/sparkybin/sparkybin-browser`).
+  * Contact email (`sparkybin@example.com`).
+  * Application icon artwork in `data/icons/` and `help/C/media/`.
+  * Flatpak `git` source URLs in `com.sparkybin.Browser.json` and
+    `com.sparkybin.Browser.Canary.json`.
+  * Help page screenshots (`help/C/media/epiphany-*.png`) still depict the
+    upstream user interface.
+  * The AppStream screenshot (`data/screenshot.png`) still depicts the upstream
+    user interface.

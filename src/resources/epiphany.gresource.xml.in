@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/org/gnome/epiphany">
+  <gresource prefix="/com/sparkybin/browser">
     <file compressed="true">about.ini</file>
     <file preprocess="xml-stripblanks" compressed="true" alias="gtk/action-bar-end.ui">resources/gtk/action-bar-end.ui</file>
     <file preprocess="xml-stripblanks" compressed="true" alias="gtk/action-bar-start.ui">resources/gtk/action-bar-start.ui</file>
@@ -41,12 +41,12 @@
     <file>mask.glsl</file>
     <file alias="hush.json">../../third-party/hush/hush.json</file>
   </gresource>
-  <gresource prefix="/org/gnome/epiphany/page-templates">
+  <gresource prefix="/com/sparkybin/browser/page-templates">
     <file compressed="true">about.css</file>
     <file compressed="true">error.css</file>
     <file compressed="true">error.html</file>
   </gresource>
-  <gresource prefix="/org/gnome/epiphany/page-icons">
+  <gresource prefix="/com/sparkybin/browser/page-icons">
     <file preprocess="xml-stripblanks" compressed="true">channel-insecure-symbolic.svg</file>
     <file preprocess="xml-stripblanks" compressed="true">computer-fail-symbolic.svg</file>
     <file preprocess="xml-stripblanks" compressed="true">private-mode.svg</file>
@@ -59,7 +59,7 @@
     <file preprocess="xml-stripblanks" compressed="true">password-generator.svg</file>
     <file preprocess="xml-stripblanks" compressed="true">password-generator-refresh.svg</file>
   </gresource>
-  <gresource prefix="/org/gnome/Epiphany/icons">
+  <gresource prefix="/com/sparkybin/Browser/icons">
     <file compressed="true" alias="scalable/actions/ephy-download-symbolic.svg">ephy-download-symbolic.svg</file>
     <file compressed="true" alias="scalable/actions/ephy-download-done-symbolic.svg">ephy-download-done-symbolic.svg</file>
     <file compressed="true" alias="scalable/actions/ephy-bookmark-tag-symbolic.svg">ephy-bookmark-tag-symbolic.svg</file>
@@ -84,10 +84,10 @@
     <file compressed="true" alias="scalable/status/ephy-loupe-plus-symbolic.svg">ephy-loupe-plus-symbolic.svg</file>
     <file compressed="true" alias="scalable/status/ephy-site-menu-button-symbolic.gpa">ephy-site-menu-button-symbolic.gpa</file>
   </gresource>
-  <gresource prefix="/org/gnome/Epiphany">
+  <gresource prefix="/com/sparkybin/Browser">
     <file preprocess="xml-stripblanks" compressed="true" alias="shortcuts-dialog.ui">resources/gtk/shortcuts-dialog.ui</file>
     <file compressed="true">style.css</file>
     <file compressed="true">style-elementary.css</file>
-    <file preprocess="xml-stripblanks" compressed="true" alias="org.gnome.Epiphany.metainfo.xml">@appid@.metainfo.xml</file>
+    <file preprocess="xml-stripblanks" compressed="true" alias="com.sparkybin.Browser.metainfo.xml">@appid@.metainfo.xml</file>
   </gresource>
 </gresources>

@@ -244,9 +244,9 @@ ephy_bookmarks_export (EphyBookmarksManager *manager,
     html = g_string_new ("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n");
     g_string_append (html, "<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n");
     g_string_append (html, "<TITLE>Bookmarks</TITLE>\n");
-    g_string_append (html, "<H1>Epiphany Bookmarks</H1>\n");
+    g_string_append (html, "<H1>SparkyBin Browser Bookmarks</H1>\n");
     g_string_append (html, "<DL><p>\n");
-    g_string_append (html, "<DT><H3>Epiphany</H3>\n");
+    g_string_append (html, "<DT><H3>SparkyBin Browser</H3>\n");
     g_string_append (html, "<DL><p>\n");
 
     g_sequence_foreach (ephy_bookmarks_manager_get_bookmarks (manager), (GFunc)add_bookmark_to_html, html);

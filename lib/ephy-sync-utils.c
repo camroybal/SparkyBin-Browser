@@ -269,7 +269,7 @@ ephy_sync_utils_make_client_record (const char *device_bso_id,
   json_object_set_string_member (object, "version", VERSION);
   json_object_set_array_member (object, "protocols", array);
   json_object_set_string_member (object, "os", "Linux");
-  json_object_set_string_member (object, "appPackage", "org.gnome.epiphany");
+  json_object_set_string_member (object, "appPackage", "com.sparkybin.browser");
   json_object_set_string_member (object, "application", "Epiphany");
 
   node = json_node_new (JSON_NODE_OBJECT);
@@ -333,7 +333,7 @@ ephy_sync_utils_get_device_name (void)
   /* Translators: First %s is the name of the user currently logged in on the
    * machine. The second %s is the machine's name. You can use the variables
    * in a different order by changing them to %2$s and %1$s. */
-  name = g_strdup_printf (_("%s’s GNOME Web on %s"), g_get_user_name (), g_get_host_name ());
+  name = g_strdup_printf (_("%s’s SparkyBin Browser on %s"), g_get_user_name (), g_get_host_name ());
   g_settings_set_string (EPHY_SETTINGS_SYNC, EPHY_PREFS_SYNC_DEVICE_NAME, name);
 
   return name;

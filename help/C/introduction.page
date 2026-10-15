@@ -15,23 +15,22 @@
 
     <include href="legal.xml" xmlns="http://www.w3.org/2001/XInclude"/>
 
-    <desc>An introduction to <app>Web</app>, a web browser for GNOME with
+    <desc>An introduction to <app>SparkyBin Browser</app>, a web browser with
     built-in privacy.</desc>
   </info>
 
   <title>Introduction</title>
 
-  <p><app>Web</app> offers a simple and clean way to browse the internet. It
+  <p><app>SparkyBin Browser</app> offers a simple and clean way to browse the internet. It
   displays pages with the same speed and accuracy as other popular
   browsers.</p>
 
-  <p><app>Web</app> is the application formerly known as
-  <app>Epiphany</app>.</p>
+  <p><app>SparkyBin Browser</app> is based on GNOME Web (Epiphany).</p>
 
   <media type="image" mime="image/png" src="media/epiphany-plain-3-36.png">
     <!--This is the alt text, as read out by screen readers and if the image is
     missing. It also describes how to re-create the image.-->
-    <p>Fullscreen screenshot of Web with the Web wiki page open in the first
-    tab and showing the GNOME website open in the second tab.</p>
+    <p>Fullscreen screenshot of SparkyBin Browser with a wiki page open in the
+    first tab and showing a website open in the second tab.</p>
   </media>
 </page>

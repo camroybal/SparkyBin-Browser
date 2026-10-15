@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/org/gnome/epiphany/readability">
+  <gresource prefix="/com/sparkybin/browser/readability">
     <file compressed="true">Readability.js</file>
     <file compressed="true">Readability-readerable.js</file>
     <file compressed="true">reader.css</file>
