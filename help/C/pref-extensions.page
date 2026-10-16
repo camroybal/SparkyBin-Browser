@@ -1,0 +1,89 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      xmlns:its="http://www.w3.org/2005/11/its"
+      type="topic" style="task"
+      id="pref-extensions">
+
+  <info>
+    <link type="guide" xref="index#pref"/>
+    <revision pkgversion="51.1" date="2026-10-15" status="candidate"/>
+
+    <include href="legal.xml" xmlns="http://www.w3.org/2001/XInclude"/>
+
+    <desc>How to add, turn on, and remove browser extensions.</desc>
+  </info>
+
+  <title>Extensions</title>
+
+  <p><app>SparkyBin Browser</app> can run web extensions written for Mozilla
+  Firefox. Extensions can read and change the pages you visit, so only install
+  extensions that you trust.</p>
+
+  <note style="important">
+    <p>Extensions are enabled by default. An extension that you turn on can read
+    and change the pages you visit, so only add extensions from sources you
+    trust, and remove any that you no longer use.</p>
+  </note>
+
+  <section id="install">
+    <title>Install an extension</title>
+
+    <steps>
+      <item>
+        <p>Download the extension's <file>.xpi</file> file. To find extensions,
+        visit <link href="https://addons.mozilla.org">addons.mozilla.org</link>.</p>
+      </item>
+      <item>
+        <p>Press the menu button in the top-right corner of the window and
+        select <guiseq><gui style="menuitem">Preferences</gui><gui style="tab">Extensions</gui></guiseq>.</p>
+      </item>
+      <item>
+        <p>Press <gui style="menuitem">Add New Extension</gui> and choose the
+        file that you downloaded.</p>
+      </item>
+      <item>
+        <p>Switch the extension on to start using it.</p>
+      </item>
+    </steps>
+  </section>
+
+  <section id="enable">
+    <title>Turn an extension on or off</title>
+
+    <steps>
+      <item>
+        <p>Press the menu button in the top-right corner of the window and
+        select <guiseq><gui style="menuitem">Preferences</gui><gui style="tab">Extensions</gui></guiseq>.</p>
+      </item>
+      <item>
+        <p>Switch the extension off to stop it from changing the pages that you
+        visit, or on to use it again.</p>
+      </item>
+    </steps>
+
+    <p>To stop extensions from running at all, switch
+    <gui>Enable WebExtensions</gui> off. The <gui>Extensions</gui> page is then
+    removed from the <gui>Preferences</gui>.</p>
+  </section>
+
+  <section id="remove">
+    <title>Remove an extension</title>
+
+    <steps>
+      <item>
+        <p>Press the menu button in the top-right corner of the window and
+        select <guiseq><gui style="menuitem">Preferences</gui><gui style="tab">Extensions</gui></guiseq>.</p>
+      </item>
+      <item>
+        <p>Select the extension, then press
+        <gui style="menuitem">Remove Extension…</gui>.</p>
+      </item>
+    </steps>
+  </section>
+
+  <note style="tip">
+    <p>Not every Firefox extension is supported. Extensions that depend on parts
+    of the extension API which <app>SparkyBin Browser</app> does not implement
+    may not work correctly.</p>
+  </note>
+
+</page>

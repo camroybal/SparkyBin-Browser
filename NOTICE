@@ -48,6 +48,28 @@ changes were made when creating SparkyBin Browser from GNOME Web (Epiphany):
     build system to use the new name and identifiers.
   * Changed developer/organization metadata, homepage, and bug tracker URLs.
 
+Behavioural changes
+-------------------
+
+  * Enabled WebExtensions by default. The `enable-webextensions` key of the
+    `com.sparkybin.Browser.web` GSettings schema defaults to true, so the
+    Extensions page is offered in the Preferences out of the box. Upstream
+    defaults this to false and treats the feature as experimental; the
+    implementation's security posture is unchanged.
+  * Moved the default profile, cache, and config directories from
+    `~/.local/share/epiphany`, `~/.cache/epiphany`, and `~/.config/epiphany`
+    to the application-ID-based paths `~/.local/share/com.sparkybin.Browser`,
+    `~/.cache/com.sparkybin.Browser`, and `~/.config/com.sparkybin.Browser`.
+    This stops a non-sandboxed installation from sharing user data with a
+    GNOME Web installation.
+  * Set the program name to `sparkybin-browser` so that GLib and GTK warnings
+    and log messages are no longer attributed to `epiphany`.
+  * Fixed a number of security, memory-safety, and lifetime defects in the
+    WebExtension implementation (use-after-free of extension objects held by
+    web views, a JavaScript-injection path in `downloads.search()`, a
+    downloads path traversal, injection of the extension API into cross-origin
+    frames, and others). See the repository history for details.
+
 Trademarks
 ----------
 
