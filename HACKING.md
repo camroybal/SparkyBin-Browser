@@ -3,9 +3,85 @@ Here are some tips to ease your introduction to SparkyBin Browser development.
 # Building the Code
 
 SparkyBin Browser often requires an unstable development release of WebKit to build
-successfully. If you're not sure how to handle this, refer to the
-[GNOME Web development wiki page](https://welcome.gnome.org/app/Epiphany) for
-suggestions.
+successfully. The combination of dependencies that is known to work is the one
+pinned in `com.sparkybin.Browser.json`, which is also the manifest GNOME Builder
+uses (see the README).
+
+## Building in a container
+
+There is no need to install anything on the host. This is one recipe that works,
+using a throwaway Fedora container. It is how this fork has been built and
+tested, so the dependency list below is known to be complete:
+
+```
+$ podman run --rm -v "$PWD:/src:Z" -v "$PWD/build:/build:Z" \
+    --entrypoint bash fedora:latest -c '
+      dnf -y install meson ninja-build gcc pkgconf-pkg-config git gettext-devel \
+        glib2-devel gtk4-devel libadwaita-devel json-glib-devel libsoup3-devel \
+        webkitgtk6.0-devel sqlite-devel libarchive-devel libpwquality-devel \
+        libportal-devel libportal-gtk4-devel gcr-devel gdk-pixbuf2-devel \
+        libxml2-devel nettle-devel gmp-devel iso-codes-devel libsecret-devel \
+        cairo-devel gstreamer1-devel gsettings-desktop-schemas-devel \
+        desktop-file-utils python3-gobject python3-pip python3-docutils
+      pip3 install --break-system-packages --no-deps blueprint-compiler
+      git config --global --add safe.directory "*"
+      meson setup /build --buildtype=debugoptimized && ninja -C /build'
+```
+
+The tree compiles with no warnings, so anything the compiler reports is worth
+looking at. Note that `-Werror=declaration-after-statement` is enabled: all
+declarations must be at the top of a block.
+
+## Running the tests
+
+The tests are GUI tests, so they need a display, a session bus and an
+`XDG_RUNTIME_DIR`. The build sets `GSETTINGS_BACKEND=memory` and the schema path
+for you. Inside the container:
+
+```
+$ podman run --rm -v "$PWD:/src:Z" -v "$PWD/build:/build:Z" \
+    --entrypoint bash fedora:latest -c '
+      dnf -y install xorg-x11-server-Xvfb glibc-langpack-en dbus-daemon procps-ng
+      dbus-uuidgen --ensure=/etc/machine-id
+      export XDG_RUNTIME_DIR=/tmp/rt
+      mkdir -p $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
+      export LANG=C.UTF-8 LC_ALL=C.UTF-8 GDK_BACKEND=x11
+      cd /build && dbus-run-session -- xvfb-run -a meson test'
+```
+
+Four tests — File helpers, Shell, Embed shell and Snapshot service — fail in a
+container because they need a working bubblewrap/FUSE document portal and a
+writable `/root`. They fail identically on an unmodified tree, so compare against
+a baseline before assuming a change broke them.
+
+## Testing an extension by hand
+
+Extensions are read from `<profile>/web_extensions/`, where `<profile>` is
+`g_get_user_data_dir()/com.sparkybin.Browser`. To try one without touching your
+real profile, point `XDG_DATA_HOME` and `XDG_CONFIG_HOME` at a scratch directory
+and seed the settings with the keyfile backend, which needs no D-Bus:
+
+```
+$ P=/tmp/scratch
+$ mkdir -p $P/data/com.sparkybin.Browser/web_extensions/demo $P/glib-2.0/settings
+$ cp -r my-extension/* $P/data/com.sparkybin.Browser/web_extensions/demo/
+$ cat > $P/glib-2.0/settings/keyfile <<EOF
+[com/sparkybin/browser/web]
+enable-webextensions=true
+webextensions-active=['Name From The Manifest']
+EOF
+$ HOME=$P XDG_DATA_HOME=$P/data XDG_CONFIG_HOME=$P \
+    GSETTINGS_BACKEND=keyfile GSETTINGS_SCHEMA_DIR=build/data \
+    EPHY_LOG_MODULES=all build/src/sparkybin-browser --new-window
+```
+
+The name in `webextensions-active` must match the extension's manifest `name`
+exactly; activation is keyed by name. Console output from the extension's own
+pages is forwarded to stdout, which is the easiest way to tell whether its
+background page ran. Its storage is written to
+`<config>/web_extensions/<directory>/local-storage.json`.
+
+See `src/webextension/README.md` for how the implementation fits together.
 
 # Code Style
 
@@ -200,6 +276,13 @@ form: `<moduleName>[:<moduleName>]*`, where `moduleName` is a filename. E.g.
 module `all` enables all log modules.
 
 Use the `LOG()` macro to put debug messages in the code.
+
+Note that `EPHY_LOG_MODULES` is required even for messages produced with
+`g_debug()` directly: `ephy_debug_init()` installs a handler for the
+application's own log domain that drops them. Setting `G_MESSAGES_DEBUG=all` is
+*not* sufficient on its own, and it is easy to be misled because debug output
+from libraries (libsoup, GTK, GIO) does appear with `G_MESSAGES_DEBUG` alone
+while this code base's own output stays silent.
 
 ## Warnings
 

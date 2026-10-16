@@ -1,3 +1,8 @@
+SparkyBin Browser is a fork of GNOME Web (Epiphany). The changes made relative to
+upstream 51.1 are recorded in the NOTICE file rather than here, because this file
+is parsed by data/generate-release-notes into the AppStream <releases> block and
+should only gain an entry once the fork has a release version of its own.
+
 51.1 - September 24, 2026
 =========================
 
