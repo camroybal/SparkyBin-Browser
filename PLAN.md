@@ -281,8 +281,9 @@ quietly.
       still said "Epiphany". Fixed. The WebDriver application name, the
       sync service client name and a few log messages went with them.
 - [x] `CONTRIBUTING.md` refers to GitLab.
-- [ ] `data/screenshot.png` and both `help/C/media/epiphany-*.png` show the
-      upstream interface.
+- [x] `data/screenshot.png` shows the real interface now, taken by running the
+      browser under Xvfb in a container. The two `help/C/media/epiphany-*.png`
+      files still show the upstream interface.
 - [ ] The icon is placeholder artwork, in the app, in the help and in the
       AppStream metadata.
 - [ ] The contact address is `sparkybin@example.com`.
@@ -305,11 +306,16 @@ quietly.
 
 ### P2 — Website
 
-- [ ] Astro scaffold, GitHub Pages, deploy workflow
-- [ ] Home and download pages
-- [ ] The channel table from 2, wired to real links
-- [ ] Remaining pages: features, screenshots, source, about
-- [ ] Fonts, palette, light and dark, motion
+Done, in `camroybal/SparkyBin-Website`. Astro, static, deployed to GitHub
+Pages by a workflow on push.
+
+- [x] Astro scaffold, GitHub Pages, deploy workflow
+- [x] Home, download, source, about and 404 pages
+- [x] The channel table from 2, wired to the releases page
+- [x] Fonts, palette, light and dark, motion
+- [ ] The wordmark and the icon. The site uses a text wordmark so that the
+      design does not have to be redone when there is a real icon.
+- [ ] A dark screenshot, for the dark version of the page.
 
 ### P3 — Fork work
 
