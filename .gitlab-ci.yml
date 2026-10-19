@@ -16,7 +16,7 @@ include:
 
 variables:
   BUNDLE: 'sparkybin-browser-git.flatpak'
-  MANIFEST_PATH: 'com.sparkybin.Browser.json'
+  MANIFEST_PATH: 'com.sparkybin.Browser.Devel.json'
   RUNTIME_REPO: 'https://nightly.gnome.org/gnome-nightly.flatpakrepo'
   FLATPAK_MODULE: 'sparkybin-browser'
   APP_ID: 'com.sparkybin.Browser.Devel'

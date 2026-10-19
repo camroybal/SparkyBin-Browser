@@ -1,13 +1,9 @@
 {
-    "app-id" : "com.sparkybin.Browser.Devel",
+    "app-id" : "com.sparkybin.Browser",
     "runtime" : "org.gnome.Platform",
-    "runtime-version" : "master",
+    "runtime-version" : "51",
     "sdk" : "org.gnome.Sdk",
     "command" : "sparkybin-browser",
-    "tags" : [
-        "nightly"
-    ],
-    "desktop-file-name-suffix" : " (SparkyBin Browser Technology Preview)",
     "finish-args" : [
         "--device=dri",
         "--device=input",
@@ -17,8 +13,7 @@
         "--socket=fallback-x11",
         "--socket=pulseaudio",
         "--socket=wayland",
-        "--own-name=com.sparkybin.Browser.WebAppProvider",
-        "--require-version=1.16.0"
+        "--own-name=com.sparkybin.Browser.WebAppProvider"
     ],
     "modules" : [
         {
@@ -57,21 +52,8 @@
             "buildsystem" : "meson",
             "builddir" : true,
             "config-opts" : [
-                "-Dtech_preview=true",
-                "-Dprofile=Devel"
+                "-Dunit_tests=disabled"
             ],
-            "build-options" : {
-                "test-args" : [
-                    "--device=dri",
-                    "--filesystem=xdg-download",
-                    "--share=ipc",
-                    "--share=network",
-                    "--socket=fallback-x11",
-                    "--socket=pulseaudio",
-                    "--socket=wayland",
-                    "--own-name=com.sparkybin.Browser.WebAppProvider"
-                ]
-            },
             "sources" : [
                 {
                     "type" : "git",
