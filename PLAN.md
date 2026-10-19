@@ -5,6 +5,15 @@ so the to-do list lives in one place instead of in a chat window.
 
 Status as of 2026-10-19.
 
+Decisions taken:
+
+- The first release is **0.1**. 1.0 waits until the stable channel, the icon
+  and the screenshots are all done.
+- The website lives in its own repository, `camroybal/SparkyBin-Website`.
+- People install from **GitHub Releases** to begin with. Flathub is the goal
+  later, not the starting point.
+- The eight verbose commits from 2026-10-15 have been reworded.
+
 ---
 
 ## 1. Where things stand
@@ -114,6 +123,44 @@ So the plan that falls out of this:
   release workflow lives.
 - The Canary stays on GitLab CI, or moves to a self-hosted runner with the
   same GNOME runtime images. Either way it is not a GitHub Actions job.
+
+### 2.3 No infrastructure is needed to start
+
+GitHub Releases is a file attachment, not a service to run. A
+`flatpak build-bundle` produces a single `.flatpak` file that a user installs
+with one command, and the runtime it needs is the GNOME runtime that is
+already on their system or that they get from Flathub.
+
+The rolling channels can be served from GitHub Pages as well. Flatpak
+repositories work over plain HTTP, so a flatpak repo directory published to
+Pages is a working `flathub --user remote-add` target, with no server to
+administer. That is a reasonable way to get a Devel and a Canary channel
+running before Flathub is an option, and it can be moved later.
+
+### 2.4 The application ID needs a decision before the first release
+
+Flathub wants the application ID to be `{tld}.{vendor}.{product}`, where the
+domain is one the developer controls and can be verified over HTTPS. It also
+says, in as many words, that the ID should be chosen carefully because
+renaming it later means resubmitting.
+
+`com.sparkybin.Browser` is three components and the `sparkybin.*` domains do
+not answer, so there is nothing to verify against. Two ways forward:
+
+- Register a `sparkybin` domain and keep the ID. A `.well-known/
+  org.flathub.VerifiedApps.txt` file on it is all the verification Flathub
+  asks for.
+- Use a code hosting ID instead: `io.github.camroybal.SparkyBinBrowser`.
+  Flathub accepts `io.github.` prefixed IDs with four or more components and
+  verifies them by authenticating with GitHub, so no domain is needed.
+
+The second is free and works today. The first reads better. Either way this
+has to be settled before the first release, because the ID is baked into the
+flatpak application ID, the GSettings schema and the D-Bus names.
+
+The same ID has to be used for the `Devel` and `Canary` profiles, so
+`io.github.camroybal.SparkyBinBrowser.Devel` and
+`io.github.camroybal.SparkyBinBrowser.Canary` follow from it.
 
 ---
 
@@ -233,22 +280,28 @@ quietly.
 - [x] `browser.runtime.getBrowserInfo()`, the user agent and four warnings
       still said "Epiphany". Fixed. The WebDriver application name, the
       sync service client name and a few log messages went with them.
-- [ ] `CONTRIBUTING.md` refers to GitLab.
+- [x] `CONTRIBUTING.md` refers to GitLab.
 - [ ] `data/screenshot.png` and both `help/C/media/epiphany-*.png` show the
       upstream interface.
 - [ ] The icon is placeholder artwork, in the app, in the help and in the
       AppStream metadata.
 - [ ] The contact address is `sparkybin@example.com`.
-- [ ] The README does not say where the bug tracker is.
+- [x] The README does not say where the bug tracker is.
 
 ### P1 — Needed before a release
 
-- [ ] Our own version number and a tag
-- [ ] `stable` flatpak manifest, and the manifest renames in 2.1
-- [ ] GitHub Actions release workflow, publishing to GitHub Releases
-- [ ] `NEWS` entry and the AppStream `<releases>` block
-- [ ] Flathub submission, or a self-hosted flatpak repo
-- [ ] Real icon and screenshots
+- [x] Our own version number. 0.1.
+- [x] The `stable` flatpak manifest, and the manifest renames in 2.1.
+- [x] A GitHub Actions release workflow that publishes to GitHub Releases.
+- [x] The `NEWS` entry and the AppStream `<releases>` block. The upstream
+      release history moved to `NEWS.upstream`, because a fork's own version
+      line does not sort with the versions it forked from, and AppStream
+      requires the releases to be in order.
+- [ ] Decide the application ID. See 2.4. This is the one thing on the list
+      that is hard to undo.
+- [ ] Cut the tag, once the application ID is settled.
+- [ ] Flathub submission, when there is an ID that can be verified.
+- [ ] Real icon and screenshots.
 
 ### P2 — Website
 
@@ -275,11 +328,10 @@ quietly.
 
 ### P4 — Housekeeping
 
-- [ ] Reword the eight verbose commits
+- [x] Reword the eight verbose commits.
 - [ ] A pull request template and an issue template
-- [ ] `NEWS` mentions that the fork's changes are recorded in `NOTICE`
-- [ ] Check that `data/generate-release-notes` handles the fork's version
-      format
+- [x] `NEWS` mentions that the fork's changes are recorded in `NOTICE`
+- [x] `data/generate-release-notes` handles the fork's version format
 
 ---
 
