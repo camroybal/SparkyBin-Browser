@@ -1324,7 +1324,7 @@ ephy_filters_manager_refresh_ucm_filters (EphyFiltersManager       *manager,
       LOG ("Added filters object at position %" G_GSIZE_FORMAT " to user content manager %p", i, ucm);
       webkit_user_content_manager_add_filter (ucm, manager->filters[i]);
     } else {
-      LOG ("Filters object at position %" G_GSIZE_FORMAT " is missing from the filters list. This is normal only if you just started Epiphany or modified your filters setting, or if the download timed out.", i);
+      LOG ("Filters object at position %" G_GSIZE_FORMAT " is missing from the filters list. This is normal only if you just started SparkyBin Browser or modified your filters setting, or if the download timed out.", i);
     }
   }
 }

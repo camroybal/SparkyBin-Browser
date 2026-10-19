@@ -828,6 +828,6 @@ ephy_web_extension_api_tabs_handler (EphyWebExtensionSender *sender,
     }
   }
 
-  g_warning ("%s(): '%s' not implemented by Epiphany!", __FUNCTION__, method_name);
+  g_warning ("%s(): '%s' not implemented by SparkyBin Browser!", __FUNCTION__, method_name);
   g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_NOT_IMPLEMENTED, "Not Implemented");
 }

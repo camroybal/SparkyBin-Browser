@@ -113,7 +113,7 @@ create_user_agent_overrides (void)
   GHashTable *overrides = g_hash_table_new (g_str_hash, g_str_equal);
 
 /* We add Epiphany to the UA so proactive extensions can rely on it always. */
-#define FIREFOX_OVERRIDE "Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0 Epiphany/" EPHY_VERSION
+#define FIREFOX_OVERRIDE "Mozilla/5.0 (X11; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0 SparkyBin/" EPHY_VERSION
 
   /* FIXME: These names are post translation. */
 
@@ -1065,7 +1065,7 @@ extension_view_handle_user_message (WebKitWebView     *web_view,
     handler = find_api_handler (split[0]);
 
   if (!handler) {
-    g_warning ("%s(): '%s' not implemented by Epiphany!", __FUNCTION__, action);
+    g_warning ("%s(): '%s' not implemented by SparkyBin Browser!", __FUNCTION__, action);
     respond_with_error (message, "Not Implemented");
     return TRUE;
   }
@@ -1412,7 +1412,7 @@ ephy_web_extensions_manager_create_web_extensions_webview (EphyWebExtension *web
   if (custom_user_agent)
     webkit_settings_set_user_agent (settings, custom_user_agent);
   else
-    webkit_settings_set_user_agent_with_application_details (settings, "Epiphany", EPHY_VERSION);
+    webkit_settings_set_user_agent_with_application_details (settings, "SparkyBin Browser", EPHY_VERSION);
 
   /* If there is a background view the web context is shared with the related-view property. */
   background_view = ephy_web_extension_manager_get_background_web_view (manager, web_extension);

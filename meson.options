@@ -7,7 +7,7 @@ option('developer_mode',
 option('tech_preview',
   type: 'boolean',
   value: false,
-  description: 'Enable Epiphany Tech Preview branding'
+  description: 'Enable SparkyBin Browser Technology Preview branding'
 )
 
 option('profile',

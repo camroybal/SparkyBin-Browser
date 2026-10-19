@@ -491,7 +491,7 @@ web_extension_parse_background (EphyWebExtension *self,
   }
 
   if (json_object_has_member (object, "persistent"))
-    LOG ("persistent background setting is not handled in Epiphany");
+    LOG ("persistent background setting is not handled in SparkyBin Browser");
 
   if (!self->background_page)
     LOG ("Invalid background object. Missing either scripts or page");

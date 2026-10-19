@@ -270,7 +270,7 @@ ephy_sync_utils_make_client_record (const char *device_bso_id,
   json_object_set_array_member (object, "protocols", array);
   json_object_set_string_member (object, "os", "Linux");
   json_object_set_string_member (object, "appPackage", "com.sparkybin.browser");
-  json_object_set_string_member (object, "application", "Epiphany");
+  json_object_set_string_member (object, "application", "SparkyBin Browser");
 
   node = json_node_new (JSON_NODE_OBJECT);
   json_node_take_object (node, object);

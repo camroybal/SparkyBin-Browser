@@ -704,7 +704,7 @@ automation_started_cb (WebKitWebContext        *web_context,
                        EphyShell               *shell)
 {
   WebKitApplicationInfo *info = webkit_application_info_new ();
-  webkit_application_info_set_name (info, "Epiphany");
+  webkit_application_info_set_name (info, "SparkyBin Browser");
   webkit_application_info_set_version (info, EPHY_MAJOR_VERSION, EPHY_MINOR_VERSION, EPHY_MICRO_VERSION);
   webkit_automation_session_set_application_info (session, info);
   webkit_application_info_unref (info);
@@ -915,7 +915,7 @@ ephy_shell_get_lockdown (EphyShell *shell)
 static void
 die_cb (void)
 {
-  g_error ("One or more EphyWindow objects are still alive long after Epiphany shutdown was requested. This is a bug.");
+  g_error ("One or more EphyWindow objects are still alive long after SparkyBin Browser shutdown was requested. This is a bug.");
 }
 
 static void
