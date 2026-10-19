@@ -231,7 +231,8 @@ quietly.
       install. Fixed: it goes through the desktop file, so the Canary
       wrapper is honoured too.
 - [x] `browser.runtime.getBrowserInfo()`, the user agent and four warnings
-      still said "Epiphany". Fixed.
+      still said "Epiphany". Fixed. The WebDriver application name, the
+      sync service client name and a few log messages went with them.
 - [ ] `CONTRIBUTING.md` refers to GitLab.
 - [ ] `data/screenshot.png` and both `help/C/media/epiphany-*.png` show the
       upstream interface.
