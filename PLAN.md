@@ -9,7 +9,7 @@ Decisions taken:
 
 - The first release is **0.1**. 1.0 waits until the stable channel, the icon
   and the screenshots are all done.
-- The website lives in its own repository, `camroybal/SparkyBin-Website`.
+- The website lives in its own repository, `camroybal/SparkyBin-site`.
 - People install from **GitHub Releases** to begin with. Flathub is the goal
   later, not the starting point.
 - The eight verbose commits from 2026-10-15 have been reworded.
@@ -170,7 +170,7 @@ Astro, static, on GitHub Pages.
 
 ### 3.1 Shape
 
-- `camroybal/SparkyBin-Website`, separate repository. The browser repo is
+- `camroybal/SparkyBin-site`, separate repository. The browser repo is
   already large and mostly C; a site does not belong inside it.
 - Astro 5 with Tailwind 4. Static output, no server, no client framework.
 - Deploy from a GitHub Actions workflow on push to `main`. `astro build` plus
@@ -306,7 +306,7 @@ quietly.
 
 ### P2 — Website
 
-Done, in `camroybal/SparkyBin-Website`. Astro, static, deployed to GitHub
+Done, in `camroybal/SparkyBin-site`. Astro, static, deployed to GitHub
 Pages by a workflow on push.
 
 - [x] Astro scaffold, GitHub Pages, deploy workflow

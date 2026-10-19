@@ -2,18 +2,20 @@
 
 A web browser for the desktop, built on WebKitGTK with GTK 4 and libadwaita.
 
-SparkyBin Browser is a fork of [GNOME Web](https://gitlab.gnome.org/GNOME/epiphany),
-last synced with the 51.1 release. It is an independent project and is not
-affiliated with or endorsed by the GNOME Foundation.
+SparkyBin Browser is a maintained build of
+[GNOME Web](https://gitlab.gnome.org/GNOME/epiphany), last synced with the
+51.1 release. It is an independent project and is not affiliated with or
+endorsed by the GNOME Foundation.
 
 [Download](#download) ·
 [Source](https://github.com/camroybal/SparkyBin-Browser) ·
-[Report a bug](https://github.com/camroybal/SparkyBin-Browser/issues)
+[Report a bug](https://github.com/camroybal/SparkyBin-Browser/issues) ·
+[Website](https://camroybal.github.io/SparkyBin-site)
 
 ## What is different
 
-This is GNOME Web with a different name and a different set of defaults. So
-far:
+The engine and the interface are GNOME Web's. The differences are in the
+defaults and in the parts that needed work:
 
 - **WebExtensions are on by default.** Upstream treats them as experimental
   and hides them behind a setting.
@@ -173,7 +175,7 @@ is made available to you under a license that
 SparkyBin Browser follows the [GNOME Human Interface
 Guidelines](https://developer.gnome.org/hig), like its upstream project.
 
-## License and fork notice
+## License
 
 SparkyBin Browser is free software, distributed under the terms of the **GNU
 General Public License, version 3 or (at your option) any later version**.
