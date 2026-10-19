@@ -316,14 +316,30 @@ Pages by a workflow on push.
 - [x] The wordmark and the icon. The site uses a text wordmark so that the
       design does not have to be redone when there is a real icon.
 - [x] A dark screenshot, for the dark version of the page.
+- [x] A product list in `src/lib/products.ts`, so a second project under the
+      SparkyBin name has somewhere to appear. The site is the browser's for
+      now, and it moves under a slug when there is a second one.
 
-### P3 — Fork work
+### P3 — Work on the browser itself
 
+- [ ] **The sidebar.** A design note is in `docs/sidebar.md`. The short
+      version: the sidebar exists, and it is the bookmarks dialog doing a
+      panel's job, showing the bookmarks bar as a flat list. The decisions
+      that shape it are whether the tree is built on tags or on real folders,
+      and whether the sidebar is a panel or a notebook. The note has the
+      options written out.
+- [ ] **Performance and stability.** A shortlist and a way to measure are in
+      `docs/performance.md`, and `tools/measure.sh` collects the numbers.
+      The first item on the list is a stability fix rather than a performance
+      one: an assertion in the renderer that would take every tab in a web
+      process down with it.
 - [ ] WebExtension gaps, in rough order of how much they matter:
       `storage.onChanged` is missing and `storage` writes block the UI
       thread; Manifest V3 is unsupported; `emit_in_tab_with_reply()` can hang
-      on a destroyed view; extensions are scanned per window, so they are not
-      known before the first window exists
+      on a destroyed view; the extension manager is a process-wide singleton
+      whose constructor starts the directory scan, so no extension is known
+      until something asks for the manager, which is usually during the
+      first window's construction
 - [ ] The menus command is carried in an action shared by every extension
 - [ ] The `TODO` file: `g_clear_object` in dispose, named timeout sources,
       `g_autofree` where it fits

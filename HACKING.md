@@ -83,6 +83,28 @@ background page ran. Its storage is written to
 
 See `src/webextension/README.md` for how the implementation fits together.
 
+# Other Documents
+
+- `docs/sidebar.md` — a design note for the sidebar, and what it collides
+  with
+- `docs/performance.md` — what can be done about speed and stability around
+  WebKit, and how to measure it
+- `src/webextension/README.md` — how the extension implementation works
+- `PLAN.md` — what is planned, and what is still open
+
+# Measuring
+
+`tools/measure.sh` reports how long the browser takes to put a window on the
+screen, how many processes it ends up with, and how much memory they use:
+
+```
+$ tools/measure.sh build/src/sparkybin-browser https://example.com
+```
+
+It needs `xdotool` for the startup time, and it uses a scratch profile so
+the numbers do not depend on the real one. See `docs/performance.md` for
+what the numbers mean and what they are good for.
+
 # Code Style
 
 In order to keep the code nice and clean we have a few requirements you'll

@@ -10,7 +10,8 @@ endorsed by the GNOME Foundation.
 [Download](#download) ·
 [Source](https://github.com/camroybal/SparkyBin-Browser) ·
 [Report a bug](https://github.com/camroybal/SparkyBin-Browser/issues) ·
-[Website](https://camroybal.github.io/SparkyBin-site)
+[Website](https://camroybal.github.io/SparkyBin-site) ·
+[Building](HACKING.md)
 
 ## What is different
 
