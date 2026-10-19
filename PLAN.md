@@ -313,9 +313,9 @@ Pages by a workflow on push.
 - [x] Home, download, source, about and 404 pages
 - [x] The channel table from 2, wired to the releases page
 - [x] Fonts, palette, light and dark, motion
-- [ ] The wordmark and the icon. The site uses a text wordmark so that the
+- [x] The wordmark and the icon. The site uses a text wordmark so that the
       design does not have to be redone when there is a real icon.
-- [ ] A dark screenshot, for the dark version of the page.
+- [x] A dark screenshot, for the dark version of the page.
 
 ### P3 — Fork work
 
