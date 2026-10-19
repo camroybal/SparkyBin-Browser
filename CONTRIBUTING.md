@@ -28,7 +28,7 @@ add the `[GTK]` prefix to the title of your bug.
 In general, only problems with the GTK user interface around the web content
 view (e.g. menus, preferences dialog, window chrome, history, bookmarks, tabs)
 or SparkyBin Browser features (e.g. Firefox Sync, adblocker, password manager, web apps)
-should be reported on the project's issue tracker.
+should be reported on the [issue tracker](https://github.com/camroybal/SparkyBin-Browser/issues).
 
 Don't worry if you accidentally submit your report in the wrong place. This
 happens all the time, since it's sometimes difficult to guess whether SparkyBin Browser
@@ -46,7 +46,7 @@ packages for all frames that appear in the crashing thread.
 If you see the message "Oops! Something went wrong while displaying this page,"
 that means WebKit has crashed. Please follow the steps above to take a quality
 backtrace for the WebKitWebProcess and to report it on WebKit Bugzilla  (not on
-SparkyBin Browser's GitLab).
+SparkyBin Browser's issue tracker).
 
 We always appreciate crash reports that include a quality backtrace. Crash
 reports without a useful backtrace will be closed.

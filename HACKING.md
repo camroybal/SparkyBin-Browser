@@ -4,8 +4,8 @@ Here are some tips to ease your introduction to SparkyBin Browser development.
 
 SparkyBin Browser often requires an unstable development release of WebKit to build
 successfully. The combination of dependencies that is known to work is the one
-pinned in `com.sparkybin.Browser.json`, which is also the manifest GNOME Builder
-uses (see the README).
+pinned in `com.sparkybin.Browser.Devel.json`, which is also the manifest GNOME
+Builder uses (see the README).
 
 ## Building in a container
 
