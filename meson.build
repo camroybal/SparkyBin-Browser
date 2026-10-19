@@ -34,6 +34,7 @@ iso_codes_prefix = iso_codes.get_variable(pkgconfig: 'prefix')
 
 profile = get_option('profile')
 application_id = 'com.sparkybin.Browser'
+binary_name = 'sparkybin-browser'
 
 if profile != ''
   application_id = 'com.sparkybin.Browser.' + profile
@@ -42,6 +43,7 @@ endif
 conf = configuration_data()
 conf.set_quoted('APPLICATION_ID', application_id)
 conf.set_quoted('BUILD_ROOT', meson.project_build_root())
+conf.set_quoted('SPARKYBIN_BINARY', binary_name)
 developer_mode = get_option('developer_mode')
 conf.set10('DEVELOPER_MODE', developer_mode)
 conf.set_quoted('DISTRIBUTOR_NAME', distributor_name)

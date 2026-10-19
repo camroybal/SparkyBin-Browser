@@ -267,17 +267,36 @@ static void
 launch_uri (const char *uri,
             guint       timestamp)
 {
-  g_autofree char *quoted_uri = NULL;
-  g_autofree char *str = NULL;
+  g_autoptr (GDesktopAppInfo) desktop_info = NULL;
   g_autoptr (GError) error = NULL;
+  g_autofree char *desktop_id = NULL;
+  GList *uris = NULL;
 
   /* TODO: Handle the timestamp */
-  quoted_uri = g_shell_quote (uri);
-  str = g_strdup_printf ("epiphany -- %s", quoted_uri);
-  g_spawn_command_line_async (str, &error);
+
+  /* Go through the desktop file rather than the binary directly, so that
+   * profiles which wrap the binary (the Canary flatpak does) are honoured.
+   */
+  desktop_id = g_strconcat (APPLICATION_ID, ".desktop", NULL);
+  desktop_info = g_desktop_app_info_new (desktop_id);
+
+  if (desktop_info) {
+    uris = g_list_append (uris, (gpointer) uri);
+
+    g_desktop_app_info_launch_uris_as_manager (desktop_info, uris, NULL,
+                                               G_SPAWN_SEARCH_PATH, NULL, NULL,
+                                               NULL, NULL, &error);
+  } else {
+    g_autofree char *quoted_uri = g_shell_quote (uri);
+    g_autofree char *str = g_strdup_printf ("%s -- %s", SPARKYBIN_BINARY, quoted_uri);
+
+    g_spawn_command_line_async (str, &error);
+  }
+
+  g_list_free (uris);
 
   if (error)
-    g_warning ("Failed to open link %s: %s", quoted_uri, error->message);
+    g_warning ("Failed to open link %s: %s", uri, error->message);
 }
 
 static void

@@ -238,7 +238,7 @@ sparkybin_browser_sources = [
   readability_resources
 ]
 
-sparkybin_browser = executable('sparkybin-browser',
+sparkybin_browser = executable(binary_name,
   sparkybin_browser_sources,
   dependencies: ephymain_dep,
   install: true,
