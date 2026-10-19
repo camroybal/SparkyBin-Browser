@@ -1,0 +1,296 @@
+# SparkyBin Browser — plan
+
+Working notes. Not a press release, not a design document. This file exists
+so the to-do list lives in one place instead of in a chat window.
+
+Status as of 2026-10-19.
+
+---
+
+## 1. Where things stand
+
+The tree is a fork of GNOME Web (Epiphany) 51.1, rebranded and pushed to
+GitHub. Everything committed so far is on `origin/main`.
+
+What exists:
+
+- The rebrand, done properly: app ID `com.sparkybin.Browser`, binary
+  `sparkybin-browser`, D-Bus names, GSettings schema, GResource prefixes.
+- A WebExtension audit that found and fixed real crashes, use-after-frees and
+  security holes (JavaScript injection in `downloads.search()`, a downloads
+  path traversal, API injection into cross-origin frames).
+- Documentation: `NOTICE` records the fork's changes for GPLv3 5(a),
+  `HACKING.md` has working build and test recipes, `src/webextension/README.md`
+  explains how the extension implementation fits together, and there is a help
+  page for extensions.
+
+What does not exist yet:
+
+- A version of our own. The tree still says `51.1`.
+- Any release. No tags, no GitHub Releases, no `stable` flatpak manifest.
+- A website.
+- A real icon. The one in `data/icons/` is a blue globe with a star and a
+  comment saying so.
+
+---
+
+## 2. Release types
+
+Three build profiles already exist in `meson.build` via `-Dprofile=`. Map the
+release channels onto them rather than inventing a new mechanism.
+
+| Channel | App ID | Built from | WebKit | Updates | Where it lives |
+|---|---|---|---|---|---|
+| Stable | `com.sparkybin.Browser` | a release tag | GNOME runtime | on release | GitHub Releases, Flathub |
+| Beta / RC | `com.sparkybin.Browser` | an rc tag | GNOME runtime | as needed | GitHub Releases, marked pre-release |
+| Devel | `com.sparkybin.Browser.Devel` | `main` | GNOME runtime | continuous | a flatpak repo |
+| Canary | `com.sparkybin.Browser.Canary` | `main` | WebKit `main` | continuous | a flatpak repo |
+
+Beta and RC are a pre-release flag on the stable app ID, not a separate app
+ID. That keeps it to three app IDs and three manifests.
+
+What each one is for:
+
+- **Stable** is what most people install. It should be boring: one app ID, one
+  flatpak on Flathub, updated a handful of times a year, and built from a tag
+  that matches the release notes.
+- **Devel** tracks `main` against the WebKit in the GNOME runtime. This is
+  what a contributor or an early adopter runs.
+- **Canary** tracks `main` against WebKit `main`. It breaks more often and
+  sometimes cannot start at all. It exists so that WebKit regressions get
+  caught by people who opt into them.
+
+### 2.1 Manifests need renaming
+
+The filenames do not match the app IDs they build, which will bite whoever
+publishes the stable build.
+
+Today:
+
+- `com.sparkybin.Browser.json` builds `com.sparkybin.Browser.Devel`
+- `com.sparkybin.Browser.Canary.json` builds `com.sparkybin.Browser.Canary`
+
+Proposed:
+
+- `com.sparkybin.Browser.json` → builds `com.sparkybin.Browser` (stable, new)
+- `com.sparkybin.Browser.Devel.json` → builds `com.sparkybin.Browser.Devel`
+  (renamed from `com.sparkybin.Browser.json`)
+- `com.sparkybin.Browser.Canary.json` → unchanged
+
+The stable manifest must not pass `-Dprofile=`, otherwise the app ID picks up
+the suffix.
+
+Renaming breaks two things that need updating in the same commit:
+
+- `.gitlab-ci.yml` (`MANIFEST_PATH`, `APP_ID`)
+- `README.md`, which tells people to open the repo in GNOME Builder and pick
+  a manifest by name
+
+### 2.2 Getting a release out
+
+1. Pick a version. The fork should start its own line rather than shipping
+   `51.1`; `1.0` is a reasonable first number but it is a decision, not a
+   fact.
+2. Tag it. `git tag -a v1.0 -m "..."`.
+3. Add a `NEWS` entry. `data/generate-release-notes` parses `NEWS` into the
+   AppStream `<releases>` block, and the script only recognises release
+   headers in the GNOME format, so the entry has to match that.
+4. Build the stable flatpak and attach it to a GitHub Release.
+5. Submit to Flathub, or host a flatpak repo ourselves if that is going to
+   take a while.
+
+There is no `.github/` directory and no GitHub Actions workflow yet. The
+existing CI is GitLab CI inherited from GNOME, pointed at nightly.gnome.org.
+A release workflow that runs on a tag and publishes to GitHub Releases is the
+missing piece, and it is the piece the website depends on.
+
+One asymmetry worth knowing before choosing where to run what. The existing
+`canary` job builds WebKit from `main` and takes up to four hours, on a runner
+tagged `webkitgtk` that only GNOME's own infrastructure provides. The stable
+and Devel builds use the WebKit already in the GNOME runtime and are cheap.
+So the plan that falls out of this:
+
+- Stable and Devel builds move to GitHub Actions, where the tag-triggered
+  release workflow lives.
+- The Canary stays on GitLab CI, or moves to a self-hosted runner with the
+  same GNOME runtime images. Either way it is not a GitHub Actions job.
+
+---
+
+## 3. Website
+
+Astro, static, on GitHub Pages.
+
+### 3.1 Shape
+
+- `camroybal/SparkyBin-Website`, separate repository. The browser repo is
+  already large and mostly C; a site does not belong inside it.
+- Astro 5 with Tailwind 4. Static output, no server, no client framework.
+- Deploy from a GitHub Actions workflow on push to `main`. `astro build` plus
+  `actions/deploy-pages` is all it takes.
+- Pages: home, download, features, screenshots, source, about, 404.
+- Copy lives in Markdown files, one per page, so it can be edited without
+  touching a component.
+
+### 3.2 The download page
+
+The point of the download page is to get people to a binary, so it should not
+be where binaries live. It links out to GitHub Releases.
+
+- Stable: `https://github.com/camroybal/SparkyBin-Browser/releases/latest`
+- Every release: `https://github.com/camroybal/SparkyBin-Browser/releases`
+- Canary and Devel: the flatpak repo URL, once there is one
+- Source: the repository
+
+The version number shown on the page can be read from the GitHub API at build
+time, so it never goes stale. It needs a fallback for when the API is rate
+limited or the site is built offline.
+
+### 3.3 Making it look good
+
+The site is the project's front door, so it should look considered. What that
+means concretely:
+
+- Real screenshots of the browser, taken here. The current `data/screenshot.png`
+  and the two `help/C/media/epiphany-*.png` files show the upstream interface,
+  which is both inaccurate and a poor advertisement.
+- A wordmark in the site, not just the placeholder icon, so the design does
+  not have to be redone when the icon is.
+- A type scale that is not the default. The web stack everyone reaches for
+  first reads as a template. A self-hosted variable font is better than a
+  Google Fonts request, both for the look and for the privacy of anyone who
+  loads the page.
+- Light and dark, following `prefers-color-scheme`.
+- Motion that respects `prefers-reduced-motion`.
+
+---
+
+## 4. README
+
+The current README is the upstream one with the names changed. It reads fine
+but does not tell a newcomer what the project is or how to get it. Missing:
+
+- What the browser is, in two sentences, and where it came from
+- Screenshots
+- A downloads section, pointing at the same links as the website
+- What is different from GNOME Web. This is the fork's entire reason to
+  exist and it is currently only in `NOTICE`
+- A project status line: based on Epiphany 51.1, WebExtension support is
+  incomplete
+- Where to report bugs. It says "the project's own tracker" and then does
+  not say where that is
+- A link to `HACKING.md` for building and `CONTRIBUTING.md` for reporting
+
+`CONTRIBUTING.md` also still says "SparkyBin Browser's GitLab" in the
+crashes section. The project is on GitHub.
+
+---
+
+## 5. Keeping AI out of the public text
+
+People notice when reference material and commit history are machine
+written, and it costs credibility with the upstream project and with
+contributors. Practical rules:
+
+**Commit messages.** Use the GNOME house style, which is terse:
+
+```
+webextension: Don't dereference a NULL WebKitWebExtension
+
+parse_manifest() checked the GError but not the object, and get_icon()
+dereferenced it unconditionally. WebKit returns NULL without setting an
+error for a manifest it cannot parse.
+```
+
+A subject line naming the area and the change, then a paragraph saying what
+was wrong and what the fix is. Not a bulleted changelog with bold headings.
+
+**Prose.** No emoji. No "modern", "cutting-edge", "seamless", "powerful",
+"beautiful". No "whether you're a developer or a power user". No lists of
+three adjectives where one will do. Short sentences. Concrete claims that can
+be checked.
+
+**Process.** Draft with whatever is convenient, then rewrite by hand before
+it lands. Every user-visible sentence gets read by a person who is willing to
+say it out loud.
+
+**The history.** The eight commits from 2026-10-15 are 200 to 600 words each,
+with bold headings and bulleted lists. They are the loudest tell in the
+repository. They can be reworded with an interactive rebase, which means
+force-pushing `main`. The fork is young and nobody has branched from it, so
+the risk is low, but it is a deliberate choice rather than something to do
+quietly.
+
+---
+
+## 6. Triage
+
+### P0 — Wrong or broken right now
+
+- [x] The search provider spawned `epiphany`, which this fork does not
+      install. Fixed: it goes through the desktop file, so the Canary
+      wrapper is honoured too.
+- [x] `browser.runtime.getBrowserInfo()`, the user agent and four warnings
+      still said "Epiphany". Fixed.
+- [ ] `CONTRIBUTING.md` refers to GitLab.
+- [ ] `data/screenshot.png` and both `help/C/media/epiphany-*.png` show the
+      upstream interface.
+- [ ] The icon is placeholder artwork, in the app, in the help and in the
+      AppStream metadata.
+- [ ] The contact address is `sparkybin@example.com`.
+- [ ] The README does not say where the bug tracker is.
+
+### P1 — Needed before a release
+
+- [ ] Our own version number and a tag
+- [ ] `stable` flatpak manifest, and the manifest renames in 2.1
+- [ ] GitHub Actions release workflow, publishing to GitHub Releases
+- [ ] `NEWS` entry and the AppStream `<releases>` block
+- [ ] Flathub submission, or a self-hosted flatpak repo
+- [ ] Real icon and screenshots
+
+### P2 — Website
+
+- [ ] Astro scaffold, GitHub Pages, deploy workflow
+- [ ] Home and download pages
+- [ ] The channel table from 2, wired to real links
+- [ ] Remaining pages: features, screenshots, source, about
+- [ ] Fonts, palette, light and dark, motion
+
+### P3 — Fork work
+
+- [ ] WebExtension gaps, in rough order of how much they matter:
+      `storage.onChanged` is missing and `storage` writes block the UI
+      thread; Manifest V3 is unsupported; `emit_in_tab_with_reply()` can hang
+      on a destroyed view; extensions are scanned per window, so they are not
+      known before the first window exists
+- [ ] The menus command is carried in an action shared by every extension
+- [ ] The `TODO` file: `g_clear_object` in dispose, named timeout sources,
+      `g_autofree` where it fits
+- [ ] Tests. The `TODO` file is blunt about it: we practically do not test
+      any part of this, and that should change. Four of the GUI tests fail in
+      a container for environmental reasons, so that needs a baseline to
+      compare against.
+
+### P4 — Housekeeping
+
+- [ ] Reword the eight verbose commits
+- [ ] A pull request template and an issue template
+- [ ] `NEWS` mentions that the fork's changes are recorded in `NOTICE`
+- [ ] Check that `data/generate-release-notes` handles the fork's version
+      format
+
+---
+
+## 7. Order of work
+
+Suggested, roughly in dependency order:
+
+1. Finish P0. Small, and it is the difference between a project that works
+   and one that appears to work.
+2. Version, manifest renames, and the release workflow. Everything on the
+   website depends on there being a release to link to.
+3. The website, once there is something real to download.
+4. The README rewrite, alongside the website so the voice is consistent.
+5. P3, as time allows. The WebExtension work is the fork's real
+   contribution and deserves the attention.
