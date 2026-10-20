@@ -49,7 +49,7 @@ Releases are published on
 A release is a flatpak bundle. To install one:
 
 ```sh
-flatpak install --user -y --bundle sparkybin-browser-v0.1.flatpak
+flatpak install --user -y --bundle sparkybin-browser-v0.2.flatpak
 ```
 
 Or, from a terminal in a SparkyBin Browser checkout, after

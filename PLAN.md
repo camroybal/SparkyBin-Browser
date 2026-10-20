@@ -7,8 +7,8 @@ Status as of 2026-10-20.
 
 Decisions taken:
 
-- The first release is **0.1**. 1.0 waits until the stable channel, the icon
-  and the screenshots are all done.
+- Releases so far are **0.1** and **0.2**. 1.0 waits until there is a stable
+  channel on Flathub; the icon and the screenshots are done.
 - The website lives in its own repository, `camroybal/SparkyBin-site`.
 - People install from **GitHub Releases** to begin with. Flathub is the goal
   later, not the starting point.
@@ -32,15 +32,16 @@ What exists:
   `HACKING.md` has working build and test recipes, `src/webextension/README.md`
   explains how the extension implementation fits together, and there is a help
   page for extensions.
+- The sidebar, which shows the bookmarks or the open tabs with a switch
+  between them, and fifteen colour palettes.
+- The website at <https://sparkybin.com>, in its own repository.
 
 What does not exist yet:
 
-- A version of our own. The tree still says `51.1`. The first release is
-  0.1, and it is published, but the version in the tree has not been
-  changed to it.
-- A second release. v0.1 is out; v0.2 has not been cut.
-- The sidebar as a tab strip. The sidebar has a list of the open tabs in
-  it, but the tab bar is still the tab bar.
+- A stable channel on Flathub, and the development history it asks for. The
+  manifest is ready; the verification token is not.
+- The sidebar as a tab strip. The sidebar can show the open tabs now, but the
+  tab bar is still the tab bar, and whether one replaces the other is open.
 - A cache setting. WebKit's default is the one that uses the most memory,
   and the user is not offered a choice. See `docs/performance.md`.
 
