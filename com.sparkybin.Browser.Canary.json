@@ -1,121 +1,121 @@
 {
-    "app-id" : "com.sparkybin.Browser.Canary",
-    "runtime" : "org.gnome.Platform",
-    "runtime-version" : "master",
-    "sdk" : "org.gnome.Sdk",
-    "sdk-extensions": [
-        "org.freedesktop.Sdk.Extension.llvm22"
-    ],
-    "command" : "ephy-wrapper",
-    "tags" : [
-        "nightly"
-    ],
-    "desktop-file-name-suffix" : " (Canary)",
-    "finish-args" : [
-        "--device=dri",
-        "--device=input",
-        "--filesystem=xdg-download",
-        "--share=ipc",
-        "--share=network",
-        "--socket=fallback-x11",
-        "--socket=pulseaudio",
-        "--socket=wayland",
-        "--own-name=com.sparkybin.Browser.WebAppProvider",
-        "--require-version=1.16.0"
-    ],
-    "modules" : [
-        {
-            "name" : "libportal",
-            "buildsystem" : "meson",
-            "config-opts" : [
-                "-Dbackend-gtk4=enabled",
-                "-Dintrospection=false",
-                "-Ddocs=false"
-            ],
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/flatpak/libportal.git",
-                    "branch" : "main"
-                }
-            ]
-        },
-        {
-            "name" : "webkitgtk",
-            "append-path": "/usr/lib/sdk/llvm22/bin",
-            "prepend-ld-library-path": "/usr/lib/sdk/llvm22/lib",
-            "buildsystem" : "cmake-ninja",
-            "config-opts": [
-                "-DPORT=GTK",
-                "-DUSE_GTK4=ON",
-                "-DCMAKE_C_COMPILER=/usr/lib/sdk/llvm22/bin/clang",
-                "-DCMAKE_CXX_COMPILER=/usr/lib/sdk/llvm22/bin/clang++",
-                "-DENABLE_SPEECH_SYNTHESIS=OFF",
-                "-DENABLE_WEBXR=OFF",
-                "-DENABLE_THUNDER=OFF",
-                "-DUSE_LIBBACKTRACE=OFF",
-                "-DUSE_SYSTEM_UNIFDEF=OFF",
-                "-DENABLE_EXPERIMENTAL_FEATURES=ON",
-                "-DUSE_VULKAN=OFF"
-            ],
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/WebKit/WebKit.git",
-                    "branch" : "main"
-                }
-            ]
-        },
-        {
-            "name" : "libpwquality",
-            "buildsystem" : "autotools",
-            "config-opts" : [
-                "--disable-python-bindings",
-                "--with-securedir=/app/lib/security"
-            ],
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/libpwquality/libpwquality.git",
-                    "tag" : "master"
-                }
-            ]
-        },
-        {
-            "name" : "sparkybin-browser",
-            "buildsystem" : "meson",
-            "config-opts" : [
-                "-Dprofile=Canary"
-            ],
-            "sources" : [
-                {
-                    "type" : "git",
-                    "url" : "https://github.com/camroybal/SparkyBin-Browser.git",
-                    "branch" : "main",
-                    "disable-shallow-clone" : true
-                }
-            ],
-            "post-install" : [
-                "sed -i 's;Exec=sparkybin-browser;Exec=ephy-wrapper;g' /app/share/applications/com.sparkybin.Browser.Canary.desktop"
-            ]
-        },
-        {
-            "name" : "ephy-wrapper",
-            "buildsystem" : "simple",
-            "build-commands" : [
-                "install -m a+rx ephy-wrapper.sh /app/bin/ephy-wrapper"
-            ],
-            "sources" : [
-                {
-                    "type" : "script",
-                    "dest-filename" : "ephy-wrapper.sh",
-                    "commands" : [
-                        "export WEBKIT_INJECTED_BUNDLE_PATH=/app/lib/webkitgtk-6.0/injected-bundle",
-                        "export WEBKIT_EXEC_PATH=/app/libexec",
-                        "exec sparkybin-browser \"$@\""
-                    ]
-                }
-            ]
-        }
-    ]
+	"app-id" : "com.sparkybin.Browser.Canary",
+	"runtime" : "org.gnome.Platform",
+	"runtime-version" : "master",
+	"sdk" : "org.gnome.Sdk",
+	"sdk-extensions": [
+		"org.freedesktop.Sdk.Extension.llvm22"
+	],
+	"command" : "ephy-wrapper",
+	"tags" : [
+		"nightly"
+	],
+	"desktop-file-name-suffix" : " (Canary)",
+	"finish-args" : [
+		"--device=dri",
+		"--device=input",
+		"--filesystem=xdg-download",
+		"--share=ipc",
+		"--share=network",
+		"--socket=fallback-x11",
+		"--socket=pulseaudio",
+		"--socket=wayland",
+		"--own-name=com.sparkybin.Browser.WebAppProvider",
+		"--require-version=1.16.0"
+	],
+	"modules" : [
+		{
+			"name" : "libportal",
+			"buildsystem" : "meson",
+			"config-opts" : [
+				"-Dbackend-gtk4=enabled",
+				"-Dintrospection=false",
+				"-Ddocs=false"
+			],
+			"sources" : [
+				{
+					"type" : "git",
+					"url" : "https://github.com/flatpak/libportal.git",
+					"branch" : "main"
+				}
+			]
+		},
+		{
+			"name" : "webkitgtk",
+			"append-path": "/usr/lib/sdk/llvm22/bin",
+			"prepend-ld-library-path": "/usr/lib/sdk/llvm22/lib",
+			"buildsystem" : "cmake-ninja",
+			"config-opts": [
+				"-DPORT=GTK",
+				"-DUSE_GTK4=ON",
+				"-DCMAKE_C_COMPILER=/usr/lib/sdk/llvm22/bin/clang",
+				"-DCMAKE_CXX_COMPILER=/usr/lib/sdk/llvm22/bin/clang++",
+				"-DENABLE_SPEECH_SYNTHESIS=OFF",
+				"-DENABLE_WEBXR=OFF",
+				"-DENABLE_THUNDER=OFF",
+				"-DUSE_LIBBACKTRACE=OFF",
+				"-DUSE_SYSTEM_UNIFDEF=OFF",
+				"-DENABLE_EXPERIMENTAL_FEATURES=ON",
+				"-DUSE_VULKAN=OFF"
+			],
+			"sources" : [
+				{
+					"type" : "git",
+					"url" : "https://github.com/WebKit/WebKit.git",
+					"branch" : "main"
+				}
+			]
+		},
+		{
+			"name" : "libpwquality",
+			"buildsystem" : "autotools",
+			"config-opts" : [
+				"--disable-python-bindings",
+				"--with-securedir=/app/lib/security"
+			],
+			"sources" : [
+				{
+					"type" : "git",
+					"url" : "https://github.com/libpwquality/libpwquality.git",
+					"tag" : "master"
+				}
+			]
+		},
+		{
+			"name" : "sparkybin-browser",
+			"buildsystem" : "meson",
+			"config-opts" : [
+				"-Dprofile=Canary"
+			],
+			"sources" : [
+				{
+					"type" : "git",
+					"url" : "https://github.com/camroybal/SparkyBin-Browser.git",
+					"branch" : "main",
+					"disable-shallow-clone" : true
+				}
+			],
+			"post-install" : [
+				"sed -i 's;Exec=sparkybin-browser;Exec=ephy-wrapper;g' /app/share/applications/com.sparkybin.Browser.Canary.desktop"
+			]
+		},
+		{
+			"name" : "ephy-wrapper",
+			"buildsystem" : "simple",
+			"build-commands" : [
+				"install -m a+rx ephy-wrapper.sh /app/bin/ephy-wrapper"
+			],
+			"sources" : [
+				{
+					"type" : "script",
+					"dest-filename" : "ephy-wrapper.sh",
+					"commands" : [
+						"export WEBKIT_INJECTED_BUNDLE_PATH=/app/lib/webkitgtk-6.0/injected-bundle",
+						"export WEBKIT_EXEC_PATH=/app/libexec",
+						"exec sparkybin-browser \"$@\""
+					]
+				}
+			]
+		}
+	]
 }

@@ -29,7 +29,8 @@ def main():
             source["commit"] = commit
 
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=4)
+        # Four tabs, the way Flathub's style guide asks for a JSON manifest.
+        json.dump(manifest, f, indent="\t")
         f.write("\n")
 
 

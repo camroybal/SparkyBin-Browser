@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: A problem with a web page
+    url: https://bugs.webkit.org/enter_bug.cgi?product=WebKit&component=WebKitGTK
+    about: Rendering, JavaScript, video and fonts are handled by WebKit, so
+      problems with them belong in the WebKit Bugzilla. Please add the
+      [GTK] prefix to the title.
+  - name: A problem with upstream GNOME Web
+    url: https://gitlab.gnome.org/GNOME/epiphany/issues
+    about: If the same problem happens in GNOME Web, it belongs there, where
+      the upstream maintainers will see it.
