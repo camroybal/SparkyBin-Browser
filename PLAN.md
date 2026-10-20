@@ -295,16 +295,21 @@ quietly.
 
 ### P1 — Needed before a release
 
-- [x] Our own version number. 0.1.
+- [x] Our own version number. 0.1, and 0.2.
 - [x] The `stable` flatpak manifest, and the manifest renames in 2.1.
 - [x] A GitHub Actions release workflow that publishes to GitHub Releases.
 - [x] The `NEWS` entry and the AppStream `<releases>` block. The upstream
       release history moved to `NEWS.upstream`, because a fork's own version
       line does not sort with the versions it forked from, and AppStream
-      requires the releases to be in order.
+      requires the releases to be in order. The `<releases>` block is
+      generated out of `NEWS` by `data/generate-release-notes`, and
+      `--check` says whether the two agree.
 - [x] Decide the application ID. See 2.4. It is `com.sparkybin.Browser`.
 - [x] Cut the tag. v0.1 is published at
       <https://github.com/camroybal/SparkyBin-Browser/releases/tag/v0.1>.
+- [ ] Cut the tag for 0.2. The version, the `NEWS` entry and the AppStream
+      `<releases>` block are the three things that have to agree, and the
+      tag has to be on the commit that carries them.
 - [ ] Flathub submission. The manifest is ready, and the domain
       verification file is in the site repository waiting for the token
       from the Developer Portal. Flathub also wants a development history,
