@@ -135,6 +135,11 @@
 			<summary>Width of the sidebar in pixels.</summary>
 			<description>The width the sidebar is opened at, in pixels. The sidebar can still be dragged to a different width.</description>
 		</key>
+		<key type="s" name="sidebar-mode">
+			<default>'bookmarks'</default>
+			<summary>What the sidebar shows.</summary>
+			<description>Whether the sidebar shows the bookmarks or the list of open tabs. Either "bookmarks" or "tabs".</description>
+		</key>
 		<key type="as" name="sidebar-sections">
 			<default>['bookmarks']</default>
 			<summary>The groups of bookmarks shown in the sidebar.</summary>

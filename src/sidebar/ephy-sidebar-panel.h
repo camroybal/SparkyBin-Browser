@@ -27,6 +27,9 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (EphySidebarPanel, ephy_sidebar_panel, EPHY, SIDEBAR_PANEL, AdwBin)
 
-GtkWidget *ephy_sidebar_panel_new (void);
+GtkWidget *ephy_sidebar_panel_new (GtkWidget *window);
+
+void       ephy_sidebar_panel_set_window (EphySidebarPanel *self,
+                                          GtkWidget       *window);
 
 G_END_DECLS

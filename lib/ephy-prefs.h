@@ -65,6 +65,7 @@ typedef enum
 #define EPHY_PREFS_UI_SIDEBAR_VISIBLE            "sidebar-visible"
 #define EPHY_PREFS_UI_SIDEBAR_WIDTH              "sidebar-width"
 #define EPHY_PREFS_UI_SIDEBAR_SECTIONS           "sidebar-sections"
+#define EPHY_PREFS_UI_SIDEBAR_MODE               "sidebar-mode"
 
 #define EPHY_PREFS_READER_SCHEMA                 "com.sparkybin.Browser.reader"
 #define EPHY_PREFS_READER_FONT_STYLE             "font-style"

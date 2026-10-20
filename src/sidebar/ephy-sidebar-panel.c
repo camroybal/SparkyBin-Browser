@@ -31,6 +31,8 @@
 #include "ephy-prefs.h"
 #include "ephy-settings.h"
 #include "ephy-shell.h"
+#include "ephy-tab-view.h"
+#include "ephy-window.h"
 
 /* The name of the section that holds the bookmarks bar. Every other
  * section is named after a tag. */
@@ -49,11 +51,17 @@ typedef struct
 struct _EphySidebarPanel {
   AdwBin parent_instance;
 
+  GtkWidget *toggle;
+  GtkWidget *stack;
   GtkWidget *search_entry;
   GtkWidget *sections_box;
   GtkWidget *results_box;
+  GtkWidget *tabs_box;
 
   GPtrArray *sections; /* SidebarSection */
+
+  GtkWidget *window;
+  AdwTabView *tab_view;
 
   EphyBookmarksManager *manager;
 };
@@ -61,6 +69,14 @@ struct _EphySidebarPanel {
 G_DEFINE_FINAL_TYPE (EphySidebarPanel, ephy_sidebar_panel, ADW_TYPE_BIN)
 
 static void sidebar_section_free (SidebarSection *section);
+static void update_tabs (EphySidebarPanel *self);
+
+static void
+sidebar_section_free (SidebarSection *section)
+{
+  g_free (section->name);
+  g_free (section);
+}
 
 static GtkWidget *
 create_bookmark_row (EphySidebarPanel *self,
@@ -202,7 +218,7 @@ populate_sections (EphySidebarPanel *self)
   sections = g_settings_get_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_SECTIONS);
   g_variant_iter_init (&iter, sections);
 
-  while (g_variant_iter_loop (&iter, "s", &name)) {
+  while (g_variant_iter_next (&iter, "&s", &name)) {
     SidebarSection *section;
     GtkWidget *box;
 
@@ -289,67 +305,136 @@ on_search_changed (GtkEditable *editable,
     populate_results (self);
 }
 
+/* The tabs */
+
 static void
-on_bookmarks_changed (EphyBookmarksManager *manager,
-                      gpointer             user_data)
+on_tab_row_activated (GtkListBoxRow *row,
+                       gpointer      user_data)
 {
   EphySidebarPanel *self = EPHY_SIDEBAR_PANEL (user_data);
+  AdwTabPage *page = g_object_get_data (G_OBJECT (row), "page");
 
-  populate_sections (self);
-
-  if (gtk_widget_get_visible (self->results_box))
-    populate_results (self);
+  if (page)
+    adw_tab_view_set_selected_page (self->tab_view, page);
 }
 
 static void
-on_bookmark_added (EphyBookmarksManager *manager,
-                   EphyBookmark         *bookmark,
-                   gpointer             user_data)
+update_tabs (EphySidebarPanel *self)
 {
-  on_bookmarks_changed (manager, user_data);
+  GtkWidget *child;
+  int n_pages;
+  AdwTabPage *selected;
+
+  /* The rows have to go through the list box, or it is left thinking they
+   * are still there. */
+  gtk_list_box_remove_all (GTK_LIST_BOX (self->tabs_box));
+
+  if (!self->tab_view)
+    return;
+
+  selected = adw_tab_view_get_selected_page (self->tab_view);
+  n_pages = adw_tab_view_get_n_pages (self->tab_view);
+
+  for (int i = 0; i < n_pages; i++) {
+    GtkWidget *row;
+    AdwTabPage *page;
+
+    page = adw_tab_view_get_nth_page (self->tab_view, i);
+    if (!page)
+      continue;
+
+    row = adw_action_row_new ();
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row),
+                                   adw_tab_page_get_title (page) ? adw_tab_page_get_title (page) : _("Untitled"));
+    g_object_set_data (G_OBJECT (row), "page", page);
+    g_signal_connect (row, "activated", G_CALLBACK (on_tab_row_activated), self);
+
+    if (page == selected)
+      gtk_widget_add_css_class (row, "sidebar-selected");
+
+    gtk_list_box_append (GTK_LIST_BOX (self->tabs_box), row);
+  }
 }
 
 static void
-on_bookmark_removed (EphyBookmarksManager *manager,
-                     EphyBookmark         *bookmark,
-                     gpointer             user_data)
+on_tabs_changed (GObject    *object,
+                  GParamSpec *pspec,
+                  gpointer    user_data)
 {
-  on_bookmarks_changed (manager, user_data);
+  update_tabs (EPHY_SIDEBAR_PANEL (user_data));
 }
 
-static void
-on_bookmark_title_changed (EphyBookmarksManager *manager,
-                           EphyBookmark         *bookmark,
-                           gpointer             user_data)
-{
-  on_bookmarks_changed (manager, user_data);
-}
+/* The toggle */
 
 static void
-on_bookmark_tag_changed (EphyBookmarksManager *manager,
-                         EphyBookmark         *bookmark,
-                         const char           *tag,
-                         gpointer             user_data)
-{
-  on_bookmarks_changed (manager, user_data);
-}
-
-static void
-on_tag_changed (EphyBookmarksManager *manager,
-                const char           *tag,
-                gpointer             user_data)
-{
-  on_bookmarks_changed (manager, user_data);
-}
-
-static void
-on_sections_changed (GSettings *settings,
-                     const char *key,
-                     gpointer   user_data)
+on_toggle_changed (AdwToggleGroup *group,
+                   GParamSpec     *pspec,
+                   gpointer        user_data)
 {
   EphySidebarPanel *self = EPHY_SIDEBAR_PANEL (user_data);
+  const char *name;
 
-  populate_sections (self);
+  name = adw_toggle_group_get_active_name (group);
+
+  if (g_strcmp0 (name, "tabs") == 0) {
+    gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "tabs");
+    update_tabs (self);
+  } else {
+    gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "bookmarks");
+  }
+
+  g_settings_set_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_MODE,
+                         name ? name : "bookmarks");
+}
+
+static void
+on_mode_changed (GSettings   *settings,
+                 const char *key,
+                 gpointer    user_data)
+{
+  EphySidebarPanel *self = EPHY_SIDEBAR_PANEL (user_data);
+  g_autofree char *mode = NULL;
+
+  mode = g_settings_get_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_MODE);
+
+  if (g_strcmp0 (mode, "tabs") != 0)
+    mode = g_strdup ("bookmarks");
+
+  adw_toggle_group_set_active_name (ADW_TOGGLE_GROUP (self->toggle), mode);
+}
+
+static void
+create_toggle (EphySidebarPanel *self)
+{
+  static const struct {
+    const char *name;
+    const char *label;
+  } modes[] = {
+    { "bookmarks", N_ ("Bookmarks") },
+    { "tabs", N_ ("Tabs") },
+  };
+
+  AdwToggleGroup *group;
+
+  group = ADW_TOGGLE_GROUP (adw_toggle_group_new ());
+
+  for (size_t i = 0; i < G_N_ELEMENTS (modes); i++) {
+    AdwToggle *toggle = ADW_TOGGLE (adw_toggle_new ());
+
+    adw_toggle_set_name (toggle, modes[i].name);
+    adw_toggle_set_label (toggle, _(modes[i].label));
+    adw_toggle_group_add (group, toggle);
+  }
+
+  gtk_widget_add_css_class (GTK_WIDGET (group), "flat");
+  gtk_widget_set_margin_top (GTK_WIDGET (group), 6);
+  gtk_widget_set_margin_bottom (GTK_WIDGET (group), 2);
+  gtk_widget_set_margin_start (GTK_WIDGET (group), 6);
+  gtk_widget_set_margin_end (GTK_WIDGET (group), 6);
+
+  g_signal_connect (group, "notify::active-name", G_CALLBACK (on_toggle_changed), self);
+
+  self->toggle = GTK_WIDGET (group);
 }
 
 static void
@@ -374,37 +459,37 @@ ephy_sidebar_panel_class_init (EphySidebarPanelClass *klass)
 static void
 ephy_sidebar_panel_init (EphySidebarPanel *self)
 {
-  GtkWidget *scrolled;
   GtkWidget *box;
+  GtkWidget *scrolled;
   GtkWidget *content;
 
-  self->manager = ephy_shell_get_bookmarks_manager (ephy_shell_get_default ());
+  self->manager = g_object_ref (ephy_shell_get_bookmarks_manager (ephy_shell_get_default ()));
   self->sections = g_ptr_array_new_with_free_func ((GDestroyNotify) sidebar_section_free);
 
   box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
+  /* The switch between the two things the sidebar can show. */
+  create_toggle (self);
+  gtk_box_append (GTK_BOX (box), self->toggle);
+
   self->search_entry = gtk_search_entry_new ();
   gtk_search_entry_set_placeholder_text (GTK_SEARCH_ENTRY (self->search_entry),
                                          _("Search bookmarks"));
-  gtk_widget_set_margin_top (self->search_entry, 6);
   gtk_widget_set_margin_bottom (self->search_entry, 6);
-  gtk_widget_set_margin_start (self->search_entry, 6);
-  gtk_widget_set_margin_end (self->search_entry, 6);
   g_signal_connect (self->search_entry, "changed", G_CALLBACK (on_search_changed), self);
   gtk_box_append (GTK_BOX (box), self->search_entry);
+
+  self->stack = gtk_stack_new ();
+  gtk_stack_set_transition_type (GTK_STACK (self->stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE);
 
   scrolled = gtk_scrolled_window_new ();
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
                                  GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-  gtk_widget_set_vexpand (scrolled, TRUE);
-
-  /* A scrolled window holds one child, and the sections and the search
-   * results take turns, so they go in a box together. */
-  content = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+  content = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+  gtk_widget_set_margin_top (content, 6);
+  gtk_widget_set_margin_bottom (content, 6);
 
   self->sections_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-  gtk_widget_set_margin_top (self->sections_box, 6);
-  gtk_widget_set_margin_bottom (self->sections_box, 6);
   gtk_box_append (GTK_BOX (content), self->sections_box);
 
   self->results_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
@@ -412,41 +497,73 @@ ephy_sidebar_panel_init (EphySidebarPanel *self)
   gtk_box_append (GTK_BOX (content), self->results_box);
 
   gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), content);
+  gtk_stack_add_named (GTK_STACK (self->stack), scrolled, "bookmarks");
 
-  gtk_box_append (GTK_BOX (box), scrolled);
+  self->tabs_box = gtk_list_box_new ();
+  gtk_list_box_set_selection_mode (GTK_LIST_BOX (self->tabs_box), GTK_SELECTION_NONE);
+  gtk_widget_add_css_class (self->tabs_box, "navigation-sidebar");
+  scrolled = gtk_scrolled_window_new ();
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled),
+                                 GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_child (GTK_SCROLLED_WINDOW (scrolled), self->tabs_box);
+  gtk_stack_add_named (GTK_STACK (self->stack), scrolled, "tabs");
+
+  gtk_box_append (GTK_BOX (box), self->stack);
 
   adw_bin_set_child (ADW_BIN (self), box);
 
-  g_signal_connect (self->manager, "bookmark-added", G_CALLBACK (on_bookmark_added), self);
-  g_signal_connect (self->manager, "bookmark-removed", G_CALLBACK (on_bookmark_removed), self);
-  g_signal_connect (self->manager, "bookmark-title-changed", G_CALLBACK (on_bookmark_title_changed), self);
-  g_signal_connect (self->manager, "bookmark-url-changed", G_CALLBACK (on_bookmark_title_changed), self);
-  g_signal_connect (self->manager, "bookmark-tag-added", G_CALLBACK (on_bookmark_tag_changed), self);
-  g_signal_connect (self->manager, "bookmark-tag-removed", G_CALLBACK (on_bookmark_tag_changed), self);
-  g_signal_connect (self->manager, "tag-created", G_CALLBACK (on_tag_changed), self);
-  g_signal_connect (self->manager, "tag-deleted", G_CALLBACK (on_tag_changed), self);
-  g_signal_connect (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_SIDEBAR_SECTIONS,
-                    G_CALLBACK (on_sections_changed), self);
-
   populate_sections (self);
+
+  g_signal_connect (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_SIDEBAR_MODE,
+                    G_CALLBACK (on_mode_changed), self);
+
+  on_mode_changed (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_MODE, self);
 }
 
-static void
-sidebar_section_free (SidebarSection *section)
+/**
+ * ephy_sidebar_panel_set_window:
+ * @self: the panel
+ * @window: (nullable): the window the panel is in
+ *
+ * Gives the panel the window it belongs to, so that it can show the tabs
+ * that are open in it.
+ */
+void
+ephy_sidebar_panel_set_window (EphySidebarPanel *self,
+                                GtkWidget       *window)
 {
-  g_free (section->name);
-  g_free (section);
+  EphyTabView *tab_view;
+
+  self->window = window;
+
+  if (!window) {
+    self->tab_view = NULL;
+    return;
+  }
+
+  tab_view = ephy_window_get_tab_view (EPHY_WINDOW (window));
+  self->tab_view = ephy_tab_view_get_tab_view (tab_view);
+
+  g_signal_connect_object (self->tab_view, "notify::n-pages",
+                           G_CALLBACK (on_tabs_changed), self, 0);
+  g_signal_connect_object (self->tab_view, "notify::selected-page",
+                           G_CALLBACK (on_tabs_changed), self, 0);
 }
 
 /**
  * ephy_sidebar_panel_new:
+ * @window: (nullable): the window the panel is in
  *
  * Creates the panel that goes in the browser's sidebar.
  *
  * Returns: (transfer full): the new panel
  */
 GtkWidget *
-ephy_sidebar_panel_new (void)
+ephy_sidebar_panel_new (GtkWidget *window)
 {
-  return g_object_new (EPHY_TYPE_SIDEBAR_PANEL, NULL);
+  EphySidebarPanel *panel = g_object_new (EPHY_TYPE_SIDEBAR_PANEL, NULL);
+
+  ephy_sidebar_panel_set_window (panel, window);
+
+  return GTK_WIDGET (panel);
 }

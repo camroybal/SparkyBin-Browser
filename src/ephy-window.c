@@ -4723,7 +4723,7 @@ ephy_window_constructed (GObject *object)
 
   ephy_shell_get_bookmarks_manager (ephy_shell_get_default ());
   window->bookmarks_dialog = ephy_bookmarks_dialog_new ();
-  window->sidebar_panel = ephy_sidebar_panel_new ();
+  window->sidebar_panel = ephy_sidebar_panel_new (GTK_WIDGET (window));
 
   /* Overlay Split View */
   window->overlay_split_view = adw_overlay_split_view_new ();
