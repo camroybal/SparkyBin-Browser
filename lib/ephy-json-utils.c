@@ -416,12 +416,12 @@ ephy_json_object_get_string_array (JsonObject *object,
 char *
 ephy_json_quote_string (const char *value)
 {
-  g_autoptr (JsonBuilder) builder = NULL;
   g_autoptr (JsonNode) node = NULL;
 
-  builder = json_builder_new ();
-  json_builder_add_string_value (builder, value ? value : "");
-  node = json_builder_get_root (builder);
+  /* A builder with no container in it cannot hold a value, so the node is
+   * made directly. */
+  node = json_node_new (JSON_NODE_VALUE);
+  json_node_init_string (node, value ? value : "");
 
   return json_to_string (node, FALSE);
 }
