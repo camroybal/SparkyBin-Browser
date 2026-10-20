@@ -86,6 +86,7 @@ window.browser.runtime.connectNative = function (...args) { return ephy_message 
 window.browser.runtime.openOptionsPage = function (...args) { return ephy_message ('runtime.openOptionsPage', args); };
 window.browser.runtime.setUninstallURL = function (...args) { return ephy_message ('runtime.setUninstallURL', args); };
 window.browser.runtime.onInstalled = new EphyEventListener ();
+window.browser.runtime.onStartup = new EphyEventListener ();
 window.browser.runtime.onMessageExternal = new EphyEventListener ();
 window.browser.runtime.sendNativeMessage = function (...args) { return ephy_message ('runtime.sendNativeMessage', args); };
 Object.defineProperty(window.browser.runtime, 'lastError', { get: function() { return window.browser.extension.lastError; } });
@@ -104,6 +105,8 @@ window.browser.browserAction = {
     onClicked: new EphyEventListener (),
     setBadgeText: function (...args) { return ephy_message ('browserAction.setBadgeText', args); },
     setBadgeBackgroundColor: function (...args) { return ephy_message ('browserAction.setBadgeBackgroundColor', args); },
+    setTitle: function (...args) { return ephy_message ('browserAction.setTitle', args); },
+    setIcon: function (...args) { return ephy_message ('browserAction.setIcon', args); },
 };
 
 window.browser.permissions = {

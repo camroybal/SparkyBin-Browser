@@ -187,8 +187,13 @@ js_getmessage (const char *message,
   if (!translations)
     return g_strdup (message);
 
+  /* An extension can ask for a message that is not there, and the answer
+   * is the name of the message. */
+  if (!json_object_has_member (translations, message))
+    return g_strdup (message);
+
   translation = json_object_get_object_member (translations, message);
-  if (translation) {
+  if (translation && json_object_has_member (translation, "message")) {
     /* FIXME: Implement placeholders: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Internationalization */
     const char *translated_message = json_object_get_string_member (translation, "message");
     return g_strdup (translated_message);

@@ -321,7 +321,6 @@ on_tab_row_activated (GtkListBoxRow *row,
 static void
 update_tabs (EphySidebarPanel *self)
 {
-  GtkWidget *child;
   int n_pages;
   AdwTabPage *selected;
 

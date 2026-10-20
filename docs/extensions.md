@@ -106,6 +106,9 @@ Events now wait for the page to finish loading before they are sent.
 - **`browser.runtime.onStartup`.** Sent when the background page has
   loaded, which is the browser starting up as far as the extension is
   concerned.
+- **`browser.runtime.onInstalled`.** The browser has no install step of its
+  own, so the list of the extensions that have been in the profile is
+  kept, and one that is not on it is a new one and is told so.
 - **`browser.browserAction.setTitle` and `setIcon`.** The title and the
   icon of the extension's button. The icon is either a path inside the
   extension or a data URL.
@@ -199,12 +202,15 @@ V3, so that is not missing so much as not yet.
 
 ### Other things that came up
 
-- `browser.runtime.onStartup` is not defined. Cookie AutoDelete and
-  Firefox Multi-Account Containers both want it.
+- `browser.browserAction.setTitle` and `setIcon` are now offered.
 - `browser.storage.sync.onChanged` is not defined. SponsorBlock wants it.
-- `browser.browserAction.setTitle` and `setIcon` are not offered.
 - An extension that uses a dynamic `import()` fails, because the
   extension's world does not have it. Decentraleyes does.
+- `browser.webRequest` is not there, and cannot be put there without a
+  change to WebKit. See above.
+- `browser.management`, `browser.contextualIdentities` and
+  `browser.extension.isAllowedFileSchemeAccess` are not offered.
+  Firefox Multi-Account Containers wants all three.
 
 ## Running the test again
 

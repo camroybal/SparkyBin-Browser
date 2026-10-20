@@ -146,9 +146,13 @@ synced_tabs_dialog_populate_from_record (SyncedTabsDialog   *dialog,
 
   tabs = ephy_open_tabs_record_get_tabs (record);
   for (GList *l = tabs; l && l->data; l = l->next) {
-    const char *title = json_object_get_string_member (l->data, "title");
-    JsonArray *url_history = json_object_get_array_member (l->data, "urlHistory");
-    const char *url = json_array_get_string_element (url_history, 0);
+    const char *title = json_object_has_member (l->data, "title")
+                          ? json_object_get_string_member (l->data, "title")
+                          : "";
+    JsonArray *url_history = json_object_has_member (l->data, "urlHistory")
+                               ? json_object_get_array_member (l->data, "urlHistory")
+                               : NULL;
+    const char *url = url_history ? json_array_get_string_element (url_history, 0) : NULL;
     GtkWidget *tab_row;
 
     tab_row = adw_action_row_new ();

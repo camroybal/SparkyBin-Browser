@@ -219,6 +219,59 @@ extension_load_data_free (EphyExtensionLoadData *data)
 
 G_DEFINE_AUTOPTR_CLEANUP_FUNC (EphyExtensionLoadData, extension_load_data_free)
 
+/*
+ * Tell an extension that it has been installed.
+ *
+ * The browser has no install step of its own: an extension is a directory
+ * in the profile. So the list of the extensions that have been in the
+ * profile is kept, and an extension that is not on it is a new one.
+ */
+static void
+tell_extension_it_is_installed (EphyWebExtensionManager *self,
+                                EphyWebExtension        *web_extension)
+{
+  g_autoptr (GVariant) value = NULL;
+  GVariantIter iter;
+  const char *guid;
+  g_autofree char *installed = NULL;
+  gboolean known = FALSE;
+
+  guid = ephy_web_extension_get_guid (web_extension);
+  if (!guid)
+    return;
+
+  value = g_settings_get_value (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_INSTALLED_EXTENSIONS);
+  g_variant_iter_init (&iter, value);
+
+  while (g_variant_iter_next (&iter, "&s", &installed)) {
+    if (g_strcmp0 (installed, guid) == 0) {
+      known = TRUE;
+      break;
+    }
+  }
+
+  if (known)
+    return;
+
+  {
+    g_autoptr (GVariantBuilder) builder = g_variant_builder_new (G_VARIANT_TYPE ("as"));
+    g_autoptr (GVariant) current = NULL;
+
+    current = g_settings_get_value (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_INSTALLED_EXTENSIONS);
+    g_variant_iter_init (&iter, current);
+    while (g_variant_iter_next (&iter, "&s", &installed))
+      g_variant_builder_add (builder, "s", installed);
+    g_variant_builder_add (builder, "s", guid);
+
+    g_settings_set_value (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_INSTALLED_EXTENSIONS,
+                          g_variant_builder_end (builder));
+  }
+
+  ephy_web_extension_manager_emit_in_extension_views (self, web_extension,
+                                                       "runtime.onInstalled",
+                                                       "{\"reason\": \"install\"}");
+}
+
 static void
 on_web_extension_loaded (GObject      *source_object,
                          GAsyncResult *result,
@@ -241,6 +294,7 @@ on_web_extension_loaded (GObject      *source_object,
   if (ephy_web_extension_manager_is_active (self, web_extension)) {
     LOG ("Activating %s", ephy_web_extension_get_name (web_extension));
     ephy_web_extension_manager_set_active (self, web_extension, TRUE);
+    tell_extension_it_is_installed (self, web_extension);
   } else {
     LOG ("%s is installed but not active", ephy_web_extension_get_name (web_extension));
   }
