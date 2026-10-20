@@ -2,4 +2,5 @@
 /build/
 /flatpak-build/
 /repo/
+/stable.json
 *.flatpak
