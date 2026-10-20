@@ -99,7 +99,15 @@ looking like Zen, and it is a separate piece of work with a migration
 attached. Option C is worth keeping in mind as the fallback if A turns out
 to be fiddly.
 
-**Open question: which one?**
+**The answer is A.** The reasons are that tags already sync with Firefox,
+so a section travels between machines without any of this being synced;
+that a section is a name rather than a database record, so changing the set
+of sections is a setting and not a migration; and that real folders can be
+added later on top of it without invalidating anything A does.
+
+A bookmark can be in more than one section, which is what a tag means. That
+is a feature for somebody who thinks in tags and a surprise for somebody
+who thinks in folders, and it is worth saying plainly in the preferences.
 
 ### What a bookmark can be
 
@@ -111,29 +119,66 @@ That is the natural home for "this bookmark belongs in the sidebar", and
 using it means a bookmark that is in the Firefox sidebar shows up here too.
 The alternative is a new local flag, which would not sync.
 
-**Open question: do we use `load_in_sidebar`, or do we make our own list?**
+**The answer for now is neither.** A section is a tag, so a bookmark is in
+the sidebar when it carries that tag. `load_in_sidebar` is left alone: a
+Firefox user's sidebar is a different idea from this one, and the two would
+fight. If it turns out that people want a short list of bookmarks that is
+neither the bar nor a tag, `load_in_sidebar` is there and is the obvious
+place to put it.
+
+### Where it is stored
+
+The configuration is local. The list of sections, the order they are in and
+the width of the sidebar are in GSettings, on this machine, and nowhere
+else.
+
+The content is a different matter. Bookmarks and tags already sync with
+Firefox, so a section that is a tag travels between machines on its own,
+without any of this being synced. That is the whole reason for building the
+sections on tags rather than on a local list.
+
+Syncing the configuration itself, so that the same set of sections is in
+front of you on every machine, is possible later. The settings live in the
+same schema as everything else, so there is a place to put it when there is
+a reason to.
+
+### Making it customisable
+
+Users choose their own sections, in their own order. The preferences page
+lists the sections, with buttons to move them up and down and to remove
+them, and an "Add Section" row that offers the tags that are not already
+sections and takes a new name for a section that does not exist yet.
+
+Adding a name that is not a tag yet creates the tag, so the section has
+somewhere to put bookmarks.
+
+Everything about the sidebar is therefore a choice rather than a fixed
+layout: which groups are there, what they are called, what order they are
+in, how wide it is, and whether it is open at all.
 
 ### Search
 
 The dialog already has a search that filters as you type, over the URL and
 the title. It should be reused rather than rewritten, and it should search
-the tree, not just the bar, so that a bookmark in a tag can be found by
-typing part of its name.
+every bookmark rather than just the bar, so that a bookmark in a tag can be
+found by typing part of its name.
 
 ### Settings
 
-Two new keys in the `com.sparkybin.Browser.ui` schema, next to
+Three new keys in the `com.sparkybin.Browser.ui` schema, next to
 `tabs-bar-visibility-policy`:
 
 - `sidebar-visible`, a boolean, so the sidebar comes back the way you left
   it
 - `sidebar-width`, an integer, so the width is yours rather than the split
   view's
+- `sidebar-sections`, a list of strings, the sections in the order they
+  appear
 
-Whether the state is per window or shared across them is a question. A
-setting suggests shared; a window that remembers its own width suggests per
-window. The obvious answer is shared visibility, per window width, which is
-what Firefox does.
+Visibility and the sections are shared across windows, because they are
+settings. The width is a property of the window, because the width you
+drag the sidebar to on a big screen is not the width you want on a small
+one, and the setting is only the width it opens at.
 
 ## What phase 1 does not do
 
@@ -167,29 +212,36 @@ built in phase 1 becomes one of those pages.
 
 New:
 
-- `src/sidebar/` — the panel, its rows, and the tree model
-- `src/sidebar/ephy-sidebar-panel.c` — the widget that replaces
-  `EphyBookmarksDialog` in the split view
-- `src/sidebar/ephy-sidebar-tree.c` — the tree over tags, or over folders
-  if that is the answer
+- `src/sidebar/ephy-sidebar-panel.c` — the widget that goes in the split
+  view
+- `src/preferences/prefs-sidebar-page.c` — the preferences page, where the
+  sections are chosen and ordered
+- `src/resources/gtk/prefs-sidebar-page.blp` — its interface
 
 Changed:
 
-- `src/ephy-window.c` — put the new panel in the split view
-- `src/bookmarks/ephy-bookmarks-dialog.c` — keep it for managing bookmarks,
-  and give it a home of its own, probably a preferences page
-- `data/com.sparkybin.browser.gschema.xml` — the two new keys
-- `src/resources/gtk/` — the panel's Blueprint
+- `src/ephy-window.c` — put the new panel in the split view, and make the
+  settings drive it
+- `src/preferences/ephy-prefs-dialog.c` — add the page
+- `data/com.sparkybin.browser.gschema.xml` — the three new keys
+- `lib/ephy-prefs.h` — their names
 
-## Open questions
+`EphyBookmarksDialog` is kept, and is now the way to manage bookmarks: the
+preferences page has a "Manage Bookmarks" row that opens it.
 
-1. **Which tree option?** Tags, real folders, or no tree.
-2. **Does the sidebar show the bookmarks bar, or replace it with a flat list
-   of everything?** Today the bar is the sidebar. If the tree carries the
+## What is still open
+
+1. **Does the sidebar show the bookmarks bar, or replace it with a flat list
+   of everything?** Today the bar is the sidebar. If the sections carry the
    grouping, the bar is redundant, and Firefox users would notice it going.
-3. **Is the sidebar a panel, or a notebook?** A notebook with Bookmarks,
+   The answer for now is that the bar is one section among others, named
+   "Bookmarks bar", and it can be removed.
+2. **Is the sidebar a panel, or a notebook?** A notebook with Bookmarks,
    History and Tabs in it is where Zen is heading, and it would make phase 2
    cheaper. But with one page in it, a notebook is a lot of furniture.
-4. **Should it be the default?** The sidebar is closed at the moment. A
+3. **Should it be the default?** The sidebar is closed at the moment. A
    sidebar that is genuinely useful might be open by default, which changes
    the look of the browser for everyone.
+4. **Drag and drop.** The sections are moved with buttons at the moment.
+   Dragging them would be nicer, and the bookmarks bar already knows how to
+   be dragged about.

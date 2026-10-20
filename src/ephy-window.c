@@ -38,6 +38,7 @@
 #include "ephy-action-bar.h"
 #include "ephy-action-helper.h"
 #include "ephy-bookmarks-dialog.h"
+#include "ephy-sidebar-panel.h"
 #include "ephy-bookmarks-manager.h"
 #include "ephy-debug.h"
 #include "ephy-desktop-utils.h"
@@ -164,6 +165,7 @@ struct _EphyWindow {
   GtkWidget *overlay_split_view;
   GtkWidget *bottom_sheet;
   GtkWidget *bookmarks_dialog;
+  GtkWidget *sidebar_panel;
   EphyEmbed *active_embed;
   EphyEmbed *previous_embed;
   EphyWindowChrome chrome;
@@ -4437,32 +4439,47 @@ notify_overview_open_cb (EphyWindow *window)
   _ephy_window_set_default_actions_sensitive (window, SENS_FLAG_IS_OVERVIEW, overview_open);
 }
 
+/* The sidebar has a search field of its own, so the address bar is put out
+ * of the way while it is open. Everything else stays available, because the
+ * sidebar is a panel and not a dialog that takes over the keyboard. */
 static const char *disabled_win_actions_for_sidebar[] = {
-  "home",
-  "new-tab",
   "location",
   "location-search",
-  "tabs-view",
-  "show-downloads",
-  "zoom-in",
-  "zoom-out",
-  "zoom-normal",
-  "toggle-inspector",
-  "toggle-reader-mode",
 };
 
-static const char *disabled_toolbar_actions_for_sidebar[] = {
-  "stop",
-  "reload",
-  "reload-bypass-cache",
-  "navigation-back",
-  "navigation-forward",
-};
+static void
+ephy_window_update_sidebar_geometry (EphyWindow *window)
+{
+  gint width = g_settings_get_int (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_WIDTH);
 
-static const char *disabled_tab_actions_for_sidebar[] = {
-  "close",
-  "duplicate",
-};
+  if (width < 180)
+    width = 180;
+
+  gtk_widget_set_size_request (window->sidebar_panel, width, -1);
+  adw_overlay_split_view_set_max_sidebar_width (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), width);
+  adw_overlay_split_view_set_sidebar_width_fraction (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), 1.0);
+}
+
+static void
+on_sidebar_visible_changed (GSettings   *settings,
+                            const char *key,
+                            gpointer   user_data)
+{
+  EphyWindow *window = EPHY_WINDOW (user_data);
+
+  adw_overlay_split_view_set_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view),
+                                           g_settings_get_boolean (settings, key));
+}
+
+static void
+on_sidebar_width_changed (GSettings   *settings,
+                           const char *key,
+                           gpointer   user_data)
+{
+  EphyWindow *window = EPHY_WINDOW (user_data);
+
+  ephy_window_update_sidebar_geometry (window);
+}
 
 static void
 show_sidebar_cb (EphyWindow *window)
@@ -4472,27 +4489,10 @@ show_sidebar_cb (EphyWindow *window)
   guint i;
   gboolean shown = adw_overlay_split_view_get_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view));
   AdwTabView *tab_view = ephy_tab_view_get_tab_view (window->tab_view);
-
   action_group = ephy_window_get_action_group (window, "win");
   for (i = 0; i < G_N_ELEMENTS (disabled_win_actions_for_sidebar); i++) {
     action = g_action_map_lookup_action (G_ACTION_MAP (action_group),
                                          disabled_win_actions_for_sidebar[i]);
-    ephy_action_change_sensitivity_flags (G_SIMPLE_ACTION (action),
-                                          SENS_FLAG_IS_SIDEBAR, shown);
-  }
-
-  action_group = ephy_window_get_action_group (window, "toolbar");
-  for (i = 0; i < G_N_ELEMENTS (disabled_toolbar_actions_for_sidebar); i++) {
-    action = g_action_map_lookup_action (G_ACTION_MAP (action_group),
-                                         disabled_toolbar_actions_for_sidebar[i]);
-    ephy_action_change_sensitivity_flags (G_SIMPLE_ACTION (action),
-                                          SENS_FLAG_IS_SIDEBAR, shown);
-  }
-
-  action_group = ephy_window_get_action_group (window, "tab");
-  for (i = 0; i < G_N_ELEMENTS (disabled_tab_actions_for_sidebar); i++) {
-    action = g_action_map_lookup_action (G_ACTION_MAP (action_group),
-                                         disabled_tab_actions_for_sidebar[i]);
     ephy_action_change_sensitivity_flags (G_SIMPLE_ACTION (action),
                                           SENS_FLAG_IS_SIDEBAR, shown);
   }
@@ -4723,20 +4723,29 @@ ephy_window_constructed (GObject *object)
 
   ephy_shell_get_bookmarks_manager (ephy_shell_get_default ());
   window->bookmarks_dialog = ephy_bookmarks_dialog_new ();
+  window->sidebar_panel = ephy_sidebar_panel_new ();
 
   /* Overlay Split View */
   window->overlay_split_view = adw_overlay_split_view_new ();
   adw_application_window_set_content (ADW_APPLICATION_WINDOW (window), GTK_WIDGET (window->overlay_split_view));
 
-  adw_overlay_split_view_set_max_sidebar_width (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), 360);
-  adw_overlay_split_view_set_collapsed (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), TRUE);
-  adw_overlay_split_view_set_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), FALSE);
-  adw_overlay_split_view_set_sidebar_position (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), GTK_PACK_END);
+  /* Not collapsed, so that the sidebar takes space next to the page
+   * instead of covering it, including the header bar. */
+  adw_overlay_split_view_set_collapsed (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), FALSE);
+  adw_overlay_split_view_set_sidebar_position (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), GTK_PACK_START);
 
   adw_overlay_split_view_set_content (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), GTK_WIDGET (window->overview));
-  adw_overlay_split_view_set_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), window->bookmarks_dialog);
+  adw_overlay_split_view_set_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view), window->sidebar_panel);
   g_signal_connect_object (window->overlay_split_view, "notify::show-sidebar",
                            G_CALLBACK (show_sidebar_cb), window, G_CONNECT_SWAPPED);
+
+  ephy_window_update_sidebar_geometry (window);
+  adw_overlay_split_view_set_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (window->overlay_split_view),
+                                           g_settings_get_boolean (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_VISIBLE));
+  g_signal_connect_object (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_SIDEBAR_VISIBLE,
+                           G_CALLBACK (on_sidebar_visible_changed), window, G_CONNECT_SWAPPED);
+  g_signal_connect_object (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_SIDEBAR_WIDTH,
+                           G_CALLBACK (on_sidebar_width_changed), window, G_CONNECT_SWAPPED);
 
   ephy_tab_view_set_tab_bar (window->tab_view, window->tab_bar);
   ephy_tab_view_set_tab_overview (window->tab_view, ADW_TAB_OVERVIEW (window->overview));
@@ -5589,15 +5598,10 @@ ephy_window_toggle_bookmarks (EphyWindow *self)
   gboolean state;
 
   state = !adw_overlay_split_view_get_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (self->overlay_split_view));
-  adw_overlay_split_view_set_show_sidebar (ADW_OVERLAY_SPLIT_VIEW (self->overlay_split_view), state);
+  g_settings_set_boolean (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_VISIBLE, state);
 
-  if (state) {
-    ephy_bookmarks_dialog_set_is_editing (EPHY_BOOKMARKS_DIALOG (self->bookmarks_dialog), FALSE);
-    ephy_bookmarks_dialog_focus (EPHY_BOOKMARKS_DIALOG (self->bookmarks_dialog));
-  } else {
+  if (!state) {
     EphyWebView *web_view = ephy_embed_get_web_view (self->active_embed);
-
-    ephy_bookmarks_dialog_clear_search (EPHY_BOOKMARKS_DIALOG (self->bookmarks_dialog));
 
     /* Set the navigation flags so the buttons don't become sensitive when exiting. */
     _ephy_window_set_navigation_flags (self, ephy_web_view_get_navigation_flags (web_view));

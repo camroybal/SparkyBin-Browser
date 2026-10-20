@@ -120,6 +120,21 @@
 			<summary>Show internal WebKit features in the features preferences page.</summary>
 			<description>Controls whether the features page in the preferences window shows internal WebKit features.</description>
 		</key>
+		<key type="b" name="sidebar-visible">
+			<default>false</default>
+			<summary>Show the sidebar.</summary>
+			<description>Whether the sidebar is shown next to the web view.</description>
+		</key>
+		<key type="i" name="sidebar-width">
+			<default>300</default>
+			<summary>Width of the sidebar in pixels.</summary>
+			<description>The width the sidebar is opened at, in pixels. The sidebar can still be dragged to a different width.</description>
+		</key>
+		<key type="as" name="sidebar-sections">
+			<default>['bookmarks']</default>
+			<summary>The groups of bookmarks shown in the sidebar.</summary>
+			<description>The list of sections in the sidebar, in the order they appear. The name “bookmarks” is the bookmarks bar, any other name is a tag.</description>
+		</key>
 	</schema>
 	<schema path="/com/sparkybin/browser/reader/" id="com.sparkybin.Browser.reader">
 		<key name="font-style" enum="com.sparkybin.Browser.EphyPrefsReaderFontStyle">

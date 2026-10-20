@@ -38,6 +38,7 @@
 #include "prefs-features-page.h"
 #include "prefs-general-page.h"
 #include "prefs-search-engine-page.h"
+#include "prefs-sidebar-page.h"
 #include "webapp-additional-urls-dialog.h"
 
 struct _EphyPrefsDialog {
@@ -124,9 +125,17 @@ on_manage_webapp_additional_urls_row_activated (GtkWidget       *privacy_page,
 }
 
 static void
-on_clear_data_row_activated (GtkWidget       *privacy_page,
-                             EphyPrefsDialog *prefs_dialog)
+on_manage_bookmarks_row_activated (GtkWidget       *sidebar_page,
+                                   EphyPrefsDialog *prefs_dialog)
 {
+  AdwNavigationPage *page = ADW_NAVIGATION_PAGE (ephy_bookmarks_dialog_new ());
+
+  adw_preferences_dialog_push_subpage (ADW_PREFERENCES_DIALOG (prefs_dialog), page);
+}
+
+static void
+on_clear_data_row_activated (GtkWidget       *privacy_page,
+                             EphyPrefsDialog *prefs_dialog){
   ephy_prefs_dialog_show_clear_data_view (prefs_dialog);
 }
 
@@ -192,6 +201,7 @@ ephy_prefs_dialog_class_init (EphyPrefsDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, on_autofill_row_activated);
   gtk_widget_class_bind_template_callback (widget_class, on_clear_data_row_activated);
   gtk_widget_class_bind_template_callback (widget_class, on_manage_webapp_additional_urls_row_activated);
+  gtk_widget_class_bind_template_callback (widget_class, on_manage_bookmarks_row_activated);
 }
 
 static void

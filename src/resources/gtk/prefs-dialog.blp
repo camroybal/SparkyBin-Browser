@@ -17,4 +17,8 @@ template $EphyPrefsDialog: Adw.PreferencesDialog {
   }
 
   $PrefsAppearancePage {}
+
+  $EphyPrefsSidebarPage {
+    manage-bookmarks-row-activated => $on_manage_bookmarks_row_activated();
+  }
 }

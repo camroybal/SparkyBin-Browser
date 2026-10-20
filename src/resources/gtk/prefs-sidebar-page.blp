@@ -1,0 +1,47 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $EphyPrefsSidebarPage: Adw.PreferencesPage {
+  icon-name: "sidebar-show-symbolic";
+
+  Adw.PreferencesGroup {
+    title: _("Sidebar");
+
+    Adw.SwitchRow visible_row {
+      title: _("Show Sidebar");
+      subtitle: _("Open the sidebar next to the web view.");
+    }
+
+    Adw.SpinRow width_row {
+      title: _("Width");
+      subtitle: _("The width the sidebar opens at, in pixels.");
+      adjustment: Gtk.Adjustment {
+        lower: 180;
+        upper: 600;
+        step-increment: 10;
+        page-increment: 50;
+        value: 300;
+      };
+    }
+  }
+
+  Adw.PreferencesGroup sections_group {
+    title: _("Sections");
+    description: _("The groups of bookmarks shown in the sidebar, in the order they appear. “Bookmarks bar” is the row of bookmarks that syncs with Firefox; any other name is a tag.");
+
+    Adw.ActionRow add_row {
+      title: _("Add Section");
+      activatable: true;
+    }
+  }
+
+  Adw.PreferencesGroup {
+    title: _("Bookmarks");
+
+    Adw.ActionRow manage_row {
+      title: _("Manage Bookmarks");
+      subtitle: _("Edit the bookmarks, and import or export them.");
+      activatable: true;
+    }
+  }
+}

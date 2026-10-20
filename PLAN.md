@@ -322,12 +322,12 @@ Pages by a workflow on push.
 
 ### P3 — Work on the browser itself
 
-- [ ] **The sidebar.** A design note is in `docs/sidebar.md`. The short
-      version: the sidebar exists, and it is the bookmarks dialog doing a
-      panel's job, showing the bookmarks bar as a flat list. The decisions
-      that shape it are whether the tree is built on tags or on real folders,
-      and whether the sidebar is a panel or a notebook. The note has the
-      options written out.
+- [ ] **The sidebar.** Phase one is built. A panel with a search field and a
+      list of sections, where a section is either the bookmarks bar or a
+      tag, and the sections are the user's to choose and order in a
+      preferences page. The design note is in `docs/sidebar.md`, which also
+      has what is still open: drag and drop for the sections, whether the
+      bar stays a section, and whether it should be open by default.
 - [ ] **Performance and stability.** A shortlist and a way to measure are in
       `docs/performance.md`, and `tools/measure.sh` collects the numbers.
       The first item on the list is a stability fix rather than a performance
