@@ -48,11 +48,11 @@ static const struct {
 
   { "Gruvbox Dark", "gruvbox-dark",
     "#282828", "#ebdbb2", "#32302f", "#3c3836",
-    "#fabd2f", "#282828", "#b8bb26", "#fe8019", "#fb4934" },
+    "#fabd2f", "#282828", "#b8bb26", "#fe8019", "#ff7f6b" },
 
   { "Gruvbox Light", "gruvbox-light",
     "#fbf1c7", "#3c3836", "#f2e5bc", "#ebdbb2",
-    "#b57614", "#fbf1c7", "#79740e", "#af3a03", "#9d0006" },
+    "#976000", "#fbf1c7", "#666100", "#af3a03", "#9d0006" },
 
   { "Dracula", "dracula",
     "#282a36", "#f8f8f2", "#21222c", "#343746",
@@ -64,11 +64,11 @@ static const struct {
 
   { "Catppuccin Latte", "catppuccin-latte",
     "#eff1f5", "#4c4f69", "#e6e9ef", "#ccd0da",
-    "#8839ef", "#eff1f5", "#40a02b", "#df8e1d", "#d20f39" },
+    "#8839ef", "#eff1f5", "#176600", "#7d4c00", "#d20f39" },
 
   { "Nord", "nord",
     "#2e3440", "#d8dee9", "#3b4252", "#434c5e",
-    "#88c0d0", "#2e3440", "#a3be8c", "#ebcb8b", "#bf616a" },
+    "#88c0d0", "#2e3440", "#a3be8c", "#ebcb8b", "#ffa8ae" },
 
   { "Tokyo Night", "tokyo-night",
     "#1a1b26", "#c0caf5", "#16161e", "#24283b",
@@ -76,11 +76,11 @@ static const struct {
 
   { "Solarized Dark", "solarized-dark",
     "#002b36", "#93a1a1", "#073642", "#002b36",
-    "#268bd2", "#002b36", "#859900", "#b58900", "#dc322f" },
+    "#3395dd", "#002b36", "#859900", "#b58900", "#fb554d" },
 
   { "One Dark", "one-dark",
     "#282c34", "#abb2bf", "#21252b", "#2c313c",
-    "#61afef", "#282c34", "#98c379", "#e5c07b", "#e06c75" },
+    "#61afef", "#282c34", "#98c379", "#e5c07b", "#eb7880" },
 
   { "Rosé Pine", "rose-pine",
     "#191724", "#e0def4", "#1f1d2e", "#26233a",
@@ -88,7 +88,7 @@ static const struct {
 
   { "Kanagawa", "kanagawa",
     "#1f1f28", "#dcd7ba", "#16161d", "#2a2a37",
-    "#7e9cd8", "#1f1f28", "#98bb6c", "#e6c384", "#e82424" },
+    "#7e9cd8", "#1f1f28", "#98bb6c", "#e6c384", "#ff5b50" },
 
   { "Everforest", "everforest",
     "#2d353b", "#d3c6aa", "#232a2e", "#343f44",
