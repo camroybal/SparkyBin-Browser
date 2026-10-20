@@ -1,0 +1,10 @@
+{
+  "manifest_version": 2,
+  "name": "Test Blocker",
+  "version": "1.0",
+  "description": "Ships a filter list, to see whether the browser uses it and reuses it.",
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "permissions": ["<all_urls>"]
+}

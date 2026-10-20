@@ -22,8 +22,8 @@ $ podman run --rm -v "$PWD:/src:Z" -v "$PWD/build:/build:Z" \
         libportal-devel libportal-gtk4-devel gcr-devel gdk-pixbuf2-devel \
         libxml2-devel nettle-devel gmp-devel iso-codes-devel libsecret-devel \
         cairo-devel gstreamer1-devel gsettings-desktop-schemas-devel \
-        desktop-file-utils python3-gobject python3-pip python3-docutils
-      pip3 install --break-system-packages --no-deps blueprint-compiler
+        desktop-file-utils python3-gobject python3-docutils itstool \
+        blueprint-compiler appstream
       git config --global --add safe.directory "*"
       meson setup /build --buildtype=debugoptimized && ninja -C /build'
 ```
@@ -41,18 +41,20 @@ for you. Inside the container:
 ```
 $ podman run --rm -v "$PWD:/src:Z" -v "$PWD/build:/build:Z" \
     --entrypoint bash fedora:latest -c '
-      dnf -y install xorg-x11-server-Xvfb glibc-langpack-en dbus-daemon procps-ng
+      dnf -y install xorg-x11-server-Xvfb xorg-x11-xauth glibc-langpack-en \
+        dbus-daemon procps-ng
       dbus-uuidgen --ensure=/etc/machine-id
       export XDG_RUNTIME_DIR=/tmp/rt
       mkdir -p $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
       export LANG=C.UTF-8 LC_ALL=C.UTF-8 GDK_BACKEND=x11
-      cd /build && dbus-run-session -- xvfb-run -a meson test'
+      cd /build && dbus-run-session -- xvfb-run -a meson test --no-suite environmental'
 ```
 
-Four tests — File helpers, Shell, Embed shell and Snapshot service — fail in a
-container because they need a working bubblewrap/FUSE document portal and a
-writable `/root`. They fail identically on an unmodified tree, so compare against
-a baseline before assuming a change broke them.
+Four tests — File helpers, Shell, Embed shell and Snapshot service — are in the
+`environmental` suite because they need a working bubblewrap/FUSE document
+portal and a writable `/root`. They fail in a container, so the command above
+skips that suite. A plain `meson test` still runs it, which is useful on a
+desktop; run it deliberately with `meson test --suite environmental`.
 
 ## Testing an extension by hand
 

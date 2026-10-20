@@ -4,10 +4,26 @@ envs = [
   'GSETTINGS_SCHEMA_DIR=' + join_paths(meson.project_build_root(), 'data'),
   'GSETTINGS_BACKEND=memory',
   'GTK_IM_MODULE=none',
-  'PATH=' + join_paths(meson.project_build_root(), 'src') + ':' + run_command('printenv', 'PATH', check: true).stdout(),
+  'PATH=' + join_paths(meson.project_build_root(), 'src') + ':' + run_command('printenv', 'PATH', check: true).stdout().strip(),
 ]
 
 test_cargs = ['-UG_DISABLE_ASSERT']
+
+# Four tests depend on a working desktop session rather than on the code:
+# File helpers assumes that it cannot write to /root (so it fails when run as
+# root); Shell, Embed shell and Snapshot service need the portals, WebKit's
+# sandbox and a writable /root that a normal desktop provides.  They fail the
+# same way on an untouched tree in a container, so they live in the
+# "environmental" suite instead of being deleted or marked should_fail (which
+# would report an unexpected pass as a failure).  Run the normal suite with:
+#
+#   meson test --no-suite environmental
+#
+# and run the environmental ones deliberately with:
+#
+#   meson test --suite environmental
+#
+# A plain `meson test` still runs both, so nothing is hidden from it.
 
 if get_option('unit_tests').enabled()
   libephytestutils = static_library('ephytestutils',
@@ -38,7 +54,8 @@ if get_option('unit_tests').enabled()
   )
   test('Embed shell test',
        embed_shell_test,
-       env: envs
+       env: envs,
+       suite: 'environmental'
   )
 
   embed_utils_test = executable('test-ephy-embed-utils',
@@ -68,7 +85,8 @@ if get_option('unit_tests').enabled()
   )
   test('File helpers test',
        file_helpers_test,
-       env: envs
+       env: envs,
+       suite: 'environmental'
   )
 
   filters_compiler_test = executable('test-ephy-filters-compiler',
@@ -89,6 +107,17 @@ if get_option('unit_tests').enabled()
   test('Filters block test',
        filters_block_test,
        env: envs
+  )
+
+  test('Extension filter cache test',
+       find_program('python3'),
+       args: [
+         join_paths(meson.current_source_dir(), 'test-extension-filter-cache.py'),
+         '--browser', join_paths(meson.project_build_root(), 'src', 'sparkybin-browser'),
+         '--fixture', join_paths(meson.current_source_dir(), 'data', 'extension-filter-cache'),
+       ],
+       env: envs,
+       timeout: 240
   )
 
   filters_compiler_web_test = executable('test-ephy-filters-compiler-web',
@@ -159,7 +188,8 @@ if get_option('unit_tests').enabled()
   )
   test('Shell test',
        shell_test,
-       env: envs
+       env: envs,
+       suite: 'environmental'
   )
 
   snapshot_service_test = executable('test-ephy-snapshot-service',
@@ -169,7 +199,8 @@ if get_option('unit_tests').enabled()
   )
   test('Snapshot service test',
        snapshot_service_test,
-       env: envs
+       env: envs,
+       suite: 'environmental'
   )
 
   sqlite_test = executable('test-ephy-sqlite',

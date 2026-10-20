@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Fedora 44
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: fedora:44
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # The Fedora base image has neither git nor node.  Checkout is a
+      # JavaScript action that also shells out to git, so both must be
+      # installed before the first `uses:` step runs.
+      - name: Install checkout prerequisites
+        run: dnf -y install git nodejs
+
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install build and test dependencies
+        run: |
+          dnf -y install \
+            meson ninja-build gcc pkgconf-pkg-config gettext-devel \
+            glib2-devel gtk4-devel libadwaita-devel json-glib-devel libsoup3-devel \
+            webkitgtk6.0-devel sqlite-devel libarchive-devel libpwquality-devel \
+            libportal-devel libportal-gtk4-devel gcr-devel gdk-pixbuf2-devel \
+            libxml2-devel nettle-devel gmp-devel iso-codes-devel libsecret-devel \
+            cairo-devel gstreamer1-devel gsettings-desktop-schemas-devel \
+            desktop-file-utils python3-gobject appstream blueprint-compiler \
+            itstool python3-docutils \
+            xorg-x11-server-Xvfb xorg-x11-xauth dbus-daemon procps-ng \
+            glibc-langpack-en
+          dnf clean all
+
+      - name: Configure
+        run: meson setup build --buildtype=debugoptimized
+
+      - name: Build
+        run: meson compile -C build
+
+      - name: Validate AppStream metadata
+        run: appstreamcli validate --no-net build/data/com.sparkybin.Browser.metainfo.xml
+
+      - name: Check release notes
+        run: python3 data/generate-release-notes --check
+
+      # The environmental suite needs a real desktop: bubblewrap/FUSE
+      # document portal access and a writable /root.  It is excluded here
+      # for the same reason the container instructions in HACKING.md exclude
+      # it; the other tests still run under a real D-Bus session and X server.
+      - name: Run tests
+        run: |
+          dbus-uuidgen --ensure=/etc/machine-id
+          export XDG_RUNTIME_DIR=/tmp/runtime-root
+          mkdir -p "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          export LANG=C.UTF-8 LC_ALL=C.UTF-8 GDK_BACKEND=x11
+          dbus-run-session -- xvfb-run -a meson test -C build \
+            --no-suite environmental --print-errorlogs --no-rebuild
