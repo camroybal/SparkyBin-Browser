@@ -2282,7 +2282,8 @@ accept_navigation_policy_decision (EphyWindow           *window,
                                             adblock_permission == EPHY_PERMISSION_DENY || adblock_permission == EPHY_PERMISSION_UNDECIDED);
 
   /* The lists of filters that come with an extension are put on the page
-   * as well, so that an ad blocker that is installed does something. */
+   * as well, so that an ad blocker that is installed does something. The
+   * manager checks the ad blocking setting. */
   ephy_web_extension_manager_apply_filters (ephy_web_extension_manager_get_default (), web_view);
 
   switch (autoplay_permission) {

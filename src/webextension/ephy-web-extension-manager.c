@@ -44,6 +44,7 @@
 #include "ephy-browser-action.h"
 #include "ephy-extension-filters.h"
 #include "ephy-debug.h"
+#include "ephy-prefs.h"
 #include "ephy-embed-prefs.h"
 #include "ephy-embed-shell.h"
 #include "ephy-embed-utils.h"
@@ -235,7 +236,8 @@ tell_extension_it_is_installed (EphyWebExtensionManager *self,
   g_autoptr (GVariant) value = NULL;
   GVariantIter iter;
   const char *guid;
-  g_autofree char *installed = NULL;
+  /* The string belongs to the variant, so it is only borrowed here. */
+  const char *installed = NULL;
   gboolean known = FALSE;
 
   guid = ephy_web_extension_get_guid (web_extension);
@@ -298,11 +300,15 @@ static void
 compile_extension_filter_lists (EphyWebExtensionManager *self,
                                 EphyWebExtension        *web_extension)
 {
-  g_autoptr (EphyExtensionFilters) filters = NULL;
   GHashTableIter iter;
   gpointer key;
   gpointer value;
   gboolean found = FALSE;
+
+  if (!g_settings_get_boolean (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_ENABLE_ADBLOCK)) {
+    g_hash_table_remove (self->extension_filters, web_extension);
+    return;
+  }
 
   g_hash_table_iter_init (&iter, ephy_web_extension_get_resources (web_extension));
   while (g_hash_table_iter_next (&iter, &key, &value)) {
@@ -333,13 +339,18 @@ compile_extension_filter_lists (EphyWebExtensionManager *self,
     LOG ("The extension %s has a filter list: %s", ephy_web_extension_get_name (web_extension), path);
 
     if (!g_hash_table_contains (self->extension_filters, web_extension)) {
-      filters = ephy_extension_filters_new ();
-      g_hash_table_insert (self->extension_filters, web_extension, g_steal_pointer (&filters));
+      EphyExtensionFilters *new_filters = ephy_extension_filters_new ();
+
+      g_hash_table_insert (self->extension_filters, web_extension, new_filters);
     }
 
-    filters = g_hash_table_lookup (self->extension_filters, web_extension);
+    {
+      /* The table owns this one, so it is only borrowed here. */
+      EphyExtensionFilters *filters = g_hash_table_lookup (self->extension_filters, web_extension);
 
-    ephy_extension_filters_add (filters, name, text, strlen (text));
+      ephy_extension_filters_add (filters, name, text, strlen (text));
+    }
+
     found = TRUE;
   }
 
@@ -360,6 +371,9 @@ ephy_web_extension_manager_apply_filters (EphyWebExtensionManager *self,
 {
   GHashTableIter iter;
   gpointer value;
+
+  if (!g_settings_get_boolean (EPHY_SETTINGS_WEB, EPHY_PREFS_WEB_ENABLE_ADBLOCK))
+    return;
 
   g_hash_table_iter_init (&iter, self->extension_filters);
   while (g_hash_table_iter_next (&iter, NULL, &value))

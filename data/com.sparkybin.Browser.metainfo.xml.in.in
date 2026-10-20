@@ -53,6 +53,16 @@
     <display_length compare="ge">360</display_length>
   </requires>
   <releases>
+    <release date="2026-10-20" version="0.2">
+      <description>
+        <p>The sidebar is new. It shows either the bookmarks or the open tabs, and a switch at the top of it says which. The bookmarks are in groups, and the groups are the user's to choose and to order in the preferences.</p>
+        <p>Fifteen colour palettes are available, named after the projects they come from: Gruvbox, Dracula, Catppuccin, Nord, Tokyo Night, Solarized, One Dark, Rose Pine, Kanagawa, Everforest, Monokai Pro, Ayu Mirage and Poimandres.</p>
+        <p>The browser keeps its own sizes now, so that a theme cannot squash it. A theme was previously free to decide that a header bar had no height.</p>
+        <p>An installed ad blocker now does something. WebKit has no way to let an extension stop a request by itself, so the browser compiles the filter lists that come with an extension into the rules that WebKit's content blockers understand, and puts them on the pages. It is the arrangement Safari uses, and it is what makes the whole of uBlock Origin's list of filters work here. The lists are compiled once and kept.</p>
+        <p>New WebExtension calls: permissions.contains and getAll, runtime.onStartup and onInstalled, browserAction.setTitle and setIcon, tabs.onUpdated and onActivated.</p>
+        <p>Fixed a number of crashes in the WebExtension code, all of which took the whole browser down: the JSON quoting helper, the extension's own schemes not being addresses, the extension having no identifier, a missing translation, and a reference to the bookmarks manager that was freed twice.</p>
+      </description>
+    </release>
     <release date="2026-10-19" version="0.1">
       <description>
         <p>First release of SparkyBin Browser, forked from GNOME Web 51.1.</p>
