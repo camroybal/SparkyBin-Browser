@@ -79,7 +79,60 @@ luck rather than by design.
 **This one is done.** Both of the places that had it now warn and return
 instead, so a double installation costs a warning rather than the process.
 
-### 2. The extension API is installed per frame, per extension
+### 2. The extension API was never delivered
+
+This one is done, and it was the largest of the three.
+
+`embed/web-process-extension/resources/js/webextensions-common.js` defined the
+event listeners with a private method:
+
+```js
+#emit (...data) { ... }
+```
+
+but the UI process reaches them by evaluating a script it builds, and a
+private method cannot be reached that way:
+
+```c
+script = g_strdup_printf ("window.browser.%s._emit(%s);", name, json);
+```
+
+So every event threw, and `_emit_with_reply`, which is how
+`runtime.onMessage` asks the extension views for an answer, never worked
+either. The methods are public now, and named the way the browser process
+calls them.
+
+### 3. Extension files were served without a type
+
+Also done.
+
+The `ephy-webextension://` scheme handler finished the response without
+saying what it was:
+
+```c
+webkit_uri_scheme_request_finish (request, stream, length, NULL);
+```
+
+A background page therefore came back as text rather than as a document, and
+the scripts in it were never fetched. The type now comes from the name of the
+file.
+
+### 4. Tabs opened in the first second were never reported
+
+Also done.
+
+The tab signals were connected in a timeout callback, a second after the
+window was added, because the delay was there for the window event, which
+needs the window to have settled before it can be described. A tab opened in
+that window in that second was never reported to the extension. The signals
+are connected straight away now, and the delay is left to do only what it was
+for.
+
+With all three fixed, an extension's background script runs, its events reach
+it, and the storage it writes is written. The extension that finds this out
+is the one that was working in someone's Firefox.
+
+### 5. The extension API is installed per frame, per extension
 
 The renderer installs the extension API into every frame of every extension
 page, and checks the frame's URI to decide whether it belongs to the
@@ -90,7 +143,7 @@ Whether it can be hoisted out of the per-frame path is worth a look, but the
 security model depends on the check being per frame, so this one is
 constrained rather than merely difficult.
 
-### 3. The cache model is never set
+### 6. The cache model is never set
 
 `webkit_web_context_set_cache_model()` exists and the browser never calls
 it, so it gets WebKit's default. The default is right for a browser, but
@@ -98,7 +151,7 @@ it, so it gets WebKit's default. The default is right for a browser, but
 cache sized for a single page rather than for a browsing session. The
 setting is one line, and it is measurable in resident memory.
 
-### 4. The extension scan is on the startup path
+### 7. The extension scan is on the startup path
 
 `EphyWebExtensionManager` is a process-wide singleton, and its constructor
 calls `ephy_web_extension_manager_scan_directory_async()`. The scan is
@@ -114,7 +167,7 @@ Making the scan happen earlier, off the window's construction path, would
 take it off the critical path. The singleton makes this easy to get wrong
 in the other direction though, so it needs care.
 
-### 5. Autofill and the password manager run on every page
+### 8. Autofill and the password manager run on every page
 
 The autofill machinery connects to the page load and asks the password
 manager for the site's credentials. The password manager is backed by
@@ -124,7 +177,7 @@ navigation whether or not the user has ever saved a password for the site.
 The obvious improvement is to skip the work entirely when there are no
 passwords stored, which is a check on a count rather than a keyring query.
 
-### 6. Website data storage is one switch for three things
+### 9. Website data storage is one switch for three things
 
 `webkit_pref_callback_enable_website_data_storage()` sets the HTML5
 database, local storage and the cookie policy from a single setting. Turning
@@ -135,7 +188,7 @@ Splitting the storage settings from the cookie setting is a small change
 that makes the setting mean what it says. The HTML5 database is deprecated
 and no current site uses it, so it is a good candidate for being off.
 
-### 7. The bookmarks sidebar rebuilds its whole list
+### 10. The bookmarks sidebar rebuilds its whole list
 
 `update_bookmarks_order()` clears the bookmarks order and re-adds every row
 when the list changes, and then saves. It runs on several different
@@ -143,13 +196,40 @@ triggers. For a few hundred bookmarks that is fine, and for a few thousand
 it is not. Worth a look once the sidebar is rebuilt, since the sidebar work
 touches the same code.
 
-### 8. The tab overview keeps a live view per tab
+### 11. The tab overview keeps a live view per tab
 
 `AdwTabOverview` shows a thumbnail per tab, and each one is a live web view.
 With a lot of tabs open that is a lot of live views, which is the largest
 single contributor to the memory number. Adwaita already handles this
 better than most, and the fix is not ours to make, but it is worth knowing
 which knob turns it.
+
+### 12. An object is unreffed at shutdown that is not an object
+
+This one is not fixed, and it is only a warning, but it should be looked at.
+
+When the browser exits with an extension loaded, the manager's dispose
+destroys the table of background views:
+
+```c
+self->background_web_views = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                                    NULL, (GDestroyNotify)g_object_unref);
+```
+
+and that gives:
+
+```
+GLib-GObject-CRITICAL: g_object_unref: assertion 'G_IS_OBJECT (object)' failed
+```
+
+The view is created with `g_object_new()`, which for a widget leaves a
+floating reference, and the table takes a pointer to it without taking a
+reference. Either the floating reference is never sunk, or the view has been
+finalised by the time the table is destroyed, and what the table is left
+holding is no longer a widget.
+
+The fix is to be explicit about who owns the view: sink the reference when
+it is created, and let the table destroy it.
 
 ## What is not worth doing
 

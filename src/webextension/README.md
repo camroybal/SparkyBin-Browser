@@ -177,7 +177,9 @@ APIs:
 Limitations:
 
 - Some of these APIs are supposed to return after the page is loaded but return immediately. (TODO)
-- None of the events are supported yet. (TODO)
+- Only some of the events are sent. `onCreated` and `onRemoved` are, with the
+  tab object. The others are not, and the event objects exist so that an
+  extension can register a listener for them, but nothing ever calls it.
 
 APIs:
 
@@ -281,6 +283,10 @@ keep working:
 - Content scripts run in a private `WebKitScriptWorld` per extension. Page
   JavaScript has no path to `browser`.
 - Extension pages run under the extension's own Content Security Policy.
+- The files of an extension are served by the `ephy-webextension://` scheme
+  handler in the UI process. The response has to say what type it is, or a
+  background page comes back as text rather than as a document and the scripts
+  in it are never fetched. The type comes from the name of the file.
 
 ### Debugging
 
@@ -320,6 +326,14 @@ private JavaScriptWorlds used for Content Scripts.
 handled; In `content_scripts_handle_user_message()` and `extension_view_handle_user_message()` specifically with `api_handlers` being defined at the top of the file. These call out to the real API handlers.
 This is also where a lot of event handling happens. The manager will listen to signals throughout Epiphany and call `ephy_web_extension_manager_emit_in_extension_views()`
 to trigger events.
+
+The event listeners are objects of the class `EphyEventListener` in
+`embed/web-process-extension/resources/js/webextensions-common.js`. The manager
+reaches them by evaluating a script it builds, so the method it calls has to
+be public and has to be called `_emit`: the name is in the string the manager
+formats, and a private `#emit` cannot be reached that way. The same applies to
+`_emit_with_reply`, which is how `runtime.onMessage` asks the extension views
+for an answer.
 
 - `src/webextension/api/*` This is where all actual API handlers are implemented. A handler is given the source of the call (the WebExtension, its WebKitWebView), the name
 of the call, the arguments (which were serialized over JSON), and a GTask to respond to the call.
