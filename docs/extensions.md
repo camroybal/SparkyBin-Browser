@@ -24,29 +24,32 @@ The things worth counting are:
   bug in the browser
 
 The results before the fixes in this release were that four of the
-extensions took the whole browser down.
+extensions took the whole browser down, and that the browser hit a critical
+of its own on the way out every time, with or without an extension
+installed.
 
 ## The results
 
 | Extension | Version | Activated | Served | API | JS errors |
 |---|---|---|---|---|---|
 | uBlock Origin | MV2 | yes | 93 | 0 | 1 |
-| Firefox Multi-Account Containers | MV2 | yes | 13 | 7 | 5 |
+| Firefox Multi-Account Containers | MV2 | yes | 13 | 27 | 4 |
 | ClearURLs | MV2 | yes | 15 | 4 | 2 |
-| Dark Reader | MV2 | yes | 8 | 27 | 1 |
-| Consent-O-Matic | MV3 | yes | 8 | 7 | 0 |
-| Cookie AutoDelete | MV2 | yes | 7 | 0 | 2 |
-| Proton Pass | MV3 | yes | 2 | 3 | 3 |
+| Dark Reader | MV2 | yes | 8 | 29 | 3 |
+| Consent-O-Matic | MV3 | yes | 8 | 7 | 2 |
+| Cookie AutoDelete | MV2 | yes | 7 | 6 | 3 |
+| Proton Pass | MV3 | yes | 2 | 3 | 4 |
 | SponsorBlock | MV2 | yes | 2 | 3 | 2 |
 | Decentraleyes | MV3 | yes | 2 | 0 | 1 |
-| Violentmonkey | MV2 | yes | 2 | 5 | 4 |
+| Violentmonkey | MV2 | yes | 2 | 5 | 3 |
 | uBlock Origin Lite | MV3 | yes | 1 | 0 | 0 |
 | Stylus | MV2 | yes | 0 | 0 | 0 |
 | Tabby | MV3 | yes | 0 | 0 | 0 |
 
-Every extension activates. Nothing takes the browser down. The ones that
-serve no files are the ones with a service worker rather than a background
-page, which is a Manifest V3 thing the browser does not do.
+Every extension activates. Nothing takes the browser down, and the browser
+hits no criticals of its own. The ones that serve no files are the ones
+with a service worker rather than a background page, which is a Manifest V3
+thing the browser does not do.
 
 ## What was wrong, and what was done about it
 
