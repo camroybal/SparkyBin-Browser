@@ -94,7 +94,7 @@ ephy_file_tmp_dir (void)
     char *partial_name;
     char *full_name;
 
-    partial_name = g_strconcat ("epiphany-", g_get_user_name (),
+    partial_name = g_strconcat ("sparkybin-", g_get_user_name (),
                                 "-XXXXXX", NULL);
     full_name = g_build_filename (g_get_tmp_dir (), partial_name,
                                   NULL);
@@ -780,7 +780,7 @@ ephy_open_default_instance_window (void)
 {
   GError *error = NULL;
 
-  g_spawn_command_line_async ("epiphany --new-window", &error);
+  g_spawn_command_line_async ("sparkybin-browser --new-window", &error);
 
   if (error) {
     g_warning ("Couldn't open default instance: %s", error->message);
@@ -799,9 +799,9 @@ ephy_open_incognito_window (const char *uri)
 
   if (uri) {
     g_autofree char *quoted_uri = g_shell_quote (uri);
-    command = g_strdup_printf ("epiphany --incognito-mode --profile %s -- %s", quoted_profile_dir, quoted_uri);
+    command = g_strdup_printf ("sparkybin-browser --incognito-mode --profile %s -- %s", quoted_profile_dir, quoted_uri);
   } else {
-    command = g_strdup_printf ("epiphany --incognito-mode --new-window --profile %s", quoted_profile_dir);
+    command = g_strdup_printf ("sparkybin-browser --incognito-mode --new-window --profile %s", quoted_profile_dir);
   }
 
   g_spawn_command_line_async (command, &error);

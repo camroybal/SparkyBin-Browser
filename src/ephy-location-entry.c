@@ -209,7 +209,7 @@ proxy_resolver_ready_cb (GObject      *object,
                         (GSourceFunc)do_dns_prefetch,
                         helper,
                         (GDestroyNotify)free_prefetch_helper);
-  g_source_set_name_by_id (helper->entry->dns_prefetch_handle_id, "[epiphany] do_dns_prefetch");
+  g_source_set_name_by_id (helper->entry->dns_prefetch_handle_id, "[sparkybin-browser] do_dns_prefetch");
 }
 
 static void
