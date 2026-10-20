@@ -43,6 +43,7 @@ $ podman run --rm -v "$PWD:/src:Z" -v "$PWD/build:/build:Z" \
     --entrypoint bash fedora:latest -c '
       dnf -y install xorg-x11-server-Xvfb xorg-x11-xauth glibc-langpack-en \
         dbus-daemon procps-ng
+      rm -f /etc/machine-id
       dbus-uuidgen --ensure=/etc/machine-id
       export XDG_RUNTIME_DIR=/tmp/rt
       mkdir -p $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR

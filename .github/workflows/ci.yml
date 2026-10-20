@@ -66,6 +66,7 @@ jobs:
       # it; the other tests still run under a real D-Bus session and X server.
       - name: Run tests
         run: |
+          rm -f /etc/machine-id
           dbus-uuidgen --ensure=/etc/machine-id
           export XDG_RUNTIME_DIR=/tmp/runtime-root
           mkdir -p "$XDG_RUNTIME_DIR"
