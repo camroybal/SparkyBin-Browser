@@ -206,30 +206,49 @@ which knob turns it.
 
 ### 12. An object is unreffed at shutdown that is not an object
 
-This one is not fixed, and it is only a warning, but it should be looked at.
+**This one is done.** The guess in the note below was wrong: the table of
+background views was not the problem. The bookmarks manager was.
 
-When the browser exits with an extension loaded, the manager's dispose
-destroys the table of background views:
-
-```c
-self->background_web_views = g_hash_table_new_full (g_direct_hash, g_direct_equal,
-                                                    NULL, (GDestroyNotify)g_object_unref);
-```
-
-and that gives:
+The manager belongs to the shell, and `ephy_shell_get_bookmarks_manager()`
+hands over a pointer that is not ours to free. Two places took it and then
+freed it when they were disposed — the sidebar panel and the preferences
+page — and the shell freed it again and found the memory gone:
 
 ```
 GLib-GObject-CRITICAL: g_object_unref: assertion 'G_IS_OBJECT (object)' failed
 ```
 
-The view is created with `g_object_new()`, which for a widget leaves a
-floating reference, and the table takes a pointer to it without taking a
-reference. Either the floating reference is never sunk, or the view has been
-finalised by the time the table is destroyed, and what the table is left
-holding is no longer a widget.
+The browser makes criticals fatal, so it died on the way out, every time,
+with or without an extension installed. The reference is taken now, so the
+free is ours to make.
 
-The fix is to be explicit about who owns the view: sink the reference when
-it is created, and let the table destroy it.
+The note below is kept because the way the table is set up is still worth
+a look: the view is created with `g_object_new()`, which for a widget
+leaves a floating reference, and the table takes a pointer to it without
+taking a reference. Either the floating reference is never sunk, or the
+view has been finalised by the time the table is destroyed, and what the
+table is left holding is no longer a widget.
+
+### 13. An extension that does the wrong thing takes the browser down
+
+**This one is done, and it was the biggest of them.**
+
+The browser makes GLib criticals fatal, so a critical anywhere takes the
+whole browser with it. Four of the well known extensions hit one, and
+there were four separate causes:
+
+- the JSON quoting helper gave a value to a builder with no container in
+  it, so json-glib said so with a critical. Six places call it.
+- an extension that opened its own options page with `tabs.create()` hit
+  an assertion, because the browser's own schemes were not addresses as
+  far as the address check was concerned
+- the polyfill most extensions load refuses to run without
+  `browser.runtime.id`, and the extension had no id
+- the bookmarks manager, above
+
+With these fixed, thirteen extensions were installed and run and none of
+them took the browser down. What they can and cannot do is written down
+in `docs/extensions.md`.
 
 ## What is not worth doing
 

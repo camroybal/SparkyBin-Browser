@@ -1,7 +1,32 @@
 # The sidebar
 
-A design note for replacing the current sidebar with something worth having.
-Nothing here is implemented yet.
+A design note for the sidebar.
+
+## What the sidebar is
+
+The sidebar is either the bookmarks or the open tabs, and a switch at the
+top of it says which. The choice is remembered.
+
+```
+┌──────────────────────┐
+│ [ Bookmarks │ Tabs ]  │  the switch
+├──────────────────────┤
+│ Search…              │  a search field, over the bookmarks
+├──────────────────────┤
+│ Bookmarks bar        │  the flat bar, as it is today
+├──────────────────────┤
+│ Work                 │  one section per tag
+│ News                 │
+│ Reading              │
+└──────────────────────┘
+```
+
+The tabs are the other half of it: the title of each open tab, in the
+order the tab bar has them, and picking one switches to it.
+
+There is no tree of sections inside a section. A section is a tag, and a
+tag is a name, so the sections are a list and the bookmarks that carry a
+tag are under it.
 
 ## What is there now
 
@@ -49,26 +74,29 @@ window, at whatever width the split view happens to pick.
 
 ### Shape
 
-One panel, in the pane the sidebar already occupies. Three sections, in this
-order, separated by hairlines:
+One panel, in the pane the sidebar already occupies. A switch at the top,
+then the sections, separated by hairlines:
 
 ```
 ┌──────────────────────┐
-│ Search…              │  a search field, always visible
+│ [ Bookmarks │ Tabs ]  │  the switch
+├──────────────────────┤
+│ Search…              │  a search field, over the bookmarks
 ├──────────────────────┤
 │ Bookmarks bar        │  the flat bar, as it is today
 ├──────────────────────┤
-│ Tags                 │  the tree, one section per tag
-│  ▸ Work              │
-│  ▸ News              │
-│  ▸ Reading           │
-├──────────────────────┤
-│ + Add bookmark       │
+│ Work                 │  one section per tag
+│ News                 │
+│ Reading              │
 └──────────────────────┘
 ```
 
 The bar stays flat because it is the bookmarks bar, and it is flat in Firefox
-too. The tree below it is where the grouping happens.
+too. The sections below it are where the grouping happens.
+
+The switch decides between the bookmarks and the tabs that are open in the
+window. It is at the top because it is the choice, and everything below it
+follows from it.
 
 ### The tree problem
 
@@ -165,7 +193,7 @@ found by typing part of its name.
 
 ### Settings
 
-Three new keys in the `com.sparkybin.Browser.ui` schema, next to
+Four new keys in the `com.sparkybin.Browser.ui` schema, next to
 `tabs-bar-visibility-policy`:
 
 - `sidebar-visible`, a boolean, so the sidebar comes back the way you left
@@ -174,16 +202,18 @@ Three new keys in the `com.sparkybin.Browser.ui` schema, next to
   view's
 - `sidebar-sections`, a list of strings, the sections in the order they
   appear
+- `sidebar-mode`, a string, either `bookmarks` or `tabs`, so the sidebar
+  comes back the way you left it
 
-Visibility and the sections are shared across windows, because they are
-settings. The width is a property of the window, because the width you
-drag the sidebar to on a big screen is not the width you want on a small
+Visibility, the sections and the mode are shared across windows, because
+they are settings. The width is a property of the window, because the width
+you drag the sidebar to on a big screen is not the width you want on a small
 one, and the setting is only the width it opens at.
 
 ## What phase 1 does not do
 
-- **No vertical tabs.** That is phase 2, and it is a different piece of work
-  with a different risk profile. See below.
+- **No vertical tab strip.** The sidebar lists the tabs, but the tab bar
+  is still the tab bar. See below.
 - **No real folders**, unless the answer to the tree question is option B.
 - **No change to the tab overview.** The grid of tab thumbnails is a
   different affordance from a list of tabs, and both can exist.
@@ -196,6 +226,11 @@ Zen puts vertical tabs in the left pane, with bookmarks as one tab of a
 notebook beside them. We already use the left pane for bookmarks, so vertical
 tabs would either take that pane or share it.
 
+The sidebar now has a list of the open tabs, which is the easy half of
+this: the list is there, it follows the tabs, and picking one switches to
+it. What it is not is the tab strip. The tab bar is still there, at the
+top, in the ordinary way.
+
 The obstacle is not the layout, it is that `AdwTabView` draws a horizontal
 tab bar over the model a vertical strip would show. A vertical tab list means
 building a `GtkListView` over the tab model and keeping it in step with
@@ -203,10 +238,10 @@ building a `GtkListView` over the tab model and keeping it in step with
 is the kind of work that browsers like Zen and Vivaldi do as part of forking
 the tab system rather than as a skin on top of it.
 
-So the order matters. Build phase 1, live with it, and only then decide
-whether the vertical tab list is worth the risk. If it is, the left pane
-becomes a notebook with Tabs, Bookmarks and History in it, and the sidebar
-built in phase 1 becomes one of those pages.
+So the order matters. The list in the sidebar is worth having on its own,
+and only then decide whether the vertical tab list should be *the* tab strip
+rather than a second view of the same tabs. If it is, the left pane becomes
+a notebook with Tabs, Bookmarks and History in it.
 
 ## Files
 
