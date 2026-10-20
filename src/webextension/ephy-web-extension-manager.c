@@ -236,8 +236,12 @@ on_web_extension_loaded (GObject      *source_object,
 
   ephy_web_extension_manager_add_to_list (self, web_extension);
 
-  if (ephy_web_extension_manager_is_active (self, web_extension))
+  if (ephy_web_extension_manager_is_active (self, web_extension)) {
+    LOG ("Activating %s", ephy_web_extension_get_name (web_extension));
     ephy_web_extension_manager_set_active (self, web_extension, TRUE);
+  } else {
+    LOG ("%s is installed but not active", ephy_web_extension_get_name (web_extension));
+  }
 }
 
 static void
@@ -412,6 +416,8 @@ ephy_webextension_scheme_cb (WebKitURISchemeRequest *request,
     webkit_uri_scheme_request_finish_error (request, g_steal_pointer (&error));
     return;
   }
+
+  LOG ("Serving '%s' to %s", path, ephy_web_extension_get_name (target_web_extension));
 
   /* @data is owned by the extension and may be freed (e.g. by uninstalling the extension) before
    * WebKit has read the stream, so it must be handed a copy it can outlive. */
@@ -1774,8 +1780,6 @@ application_window_added_timeout_cb (gpointer user_data)
   WindowAddedCallbackData *data = user_data;
   EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
   EphyWindow *window = ephy_web_extension_api_windows_get_window_for_id (data->window_id);
-  EphyTabView *tab_view;
-  AdwTabView *adw_tab_view;
   g_autofree char *window_json = NULL;
 
   /* It is possible the window was removed before this timeout. */
