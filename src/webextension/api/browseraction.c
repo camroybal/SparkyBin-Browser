@@ -117,9 +117,142 @@ browseraction_handler_set_badge_background_color (EphyWebExtensionSender *sender
   g_task_return_pointer (task, NULL, NULL);
 }
 
+/*
+ * An extension can give its button a title of its own, and an icon of its
+ * own.
+ *
+ * The icon is either a path inside the extension, or a data URL. A path
+ * is read out of the extension the same way the browser serves it, so it
+ * can only be a file the extension already has.
+ */
+static GdkPixbuf *
+pixbuf_from_data_url (const char *url)
+{
+  g_autofree guchar *decoded = NULL;
+  g_autoptr (GBytes) bytes = NULL;
+  g_autoptr (GInputStream) stream = NULL;
+  GdkPixbuf *pixbuf;
+  const char *comma;
+  gsize length;
+
+  if (!g_str_has_prefix (url, "data:"))
+    return NULL;
+
+  comma = strchr (url, ',');
+  if (!comma)
+    return NULL;
+
+  if (!g_str_has_prefix (comma + 1, "base64,"))
+    return NULL;
+
+  decoded = g_base64_decode (comma + strlen (",base64,"), &length);
+  if (!decoded)
+    return NULL;
+
+  bytes = g_bytes_new_take (decoded, length);
+  stream = g_memory_input_stream_new_from_bytes (bytes);
+
+  pixbuf = gdk_pixbuf_new_from_stream (stream, NULL, NULL);
+  if (!pixbuf)
+    return NULL;
+
+  return pixbuf;
+}
+
+static GdkPixbuf *
+pixbuf_from_path (EphyWebExtension *extension,
+                  const char       *path)
+{
+  gconstpointer data = NULL;
+  g_autoptr (GBytes) bytes = NULL;
+  g_autoptr (GInputStream) stream = NULL;
+  gsize length = 0;
+  GdkPixbuf *pixbuf;
+
+  data = ephy_web_extension_get_resource (extension, path, &length);
+  if (!data)
+    return NULL;
+
+  bytes = g_bytes_new_static (data, length);
+  stream = g_memory_input_stream_new_from_bytes (bytes);
+
+  pixbuf = gdk_pixbuf_new_from_stream (stream, NULL, NULL);
+  if (!pixbuf)
+    return NULL;
+
+  return pixbuf;
+}
+
+static void
+browseraction_handler_set_title (EphyWebExtensionSender *sender,
+                                 const char             *method_name,
+                                 JsonArray              *args,
+                                 GTask                  *task)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  JsonObject *details;
+  const char *title;
+
+  details = ephy_json_array_get_object (args, 0);
+  if (!details) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "browserAction.setTitle(): Missing details");
+    return;
+  }
+
+  title = ephy_json_object_get_string (details, "title");
+  if (!title) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "browserAction.setTitle(): Missing title");
+    return;
+  }
+
+  ephy_web_extension_manager_browseraction_set_title (manager, sender->extension, title);
+  g_task_return_pointer (task, NULL, NULL);
+}
+
+static void
+browseraction_handler_set_icon (EphyWebExtensionSender *sender,
+                                const char             *method_name,
+                                JsonArray              *args,
+                                GTask                  *task)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  JsonObject *details;
+  const char *path = NULL;
+  const char *image_details = NULL;
+
+  GdkPixbuf *pixbuf = NULL;
+
+  details = ephy_json_array_get_object (args, 0);
+  if (!details) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT, "browserAction.setIcon(): Missing details");
+    return;
+  }
+
+  path = ephy_json_object_get_string (details, "path");
+  image_details = ephy_json_object_get_string (details, "imageDetails");
+
+  if (path)
+    pixbuf = pixbuf_from_path (sender->extension, path);
+  else if (image_details)
+    pixbuf = pixbuf_from_data_url (image_details);
+
+  if (!pixbuf) {
+    g_task_return_new_error (task, WEB_EXTENSION_ERROR, WEB_EXTENSION_ERROR_INVALID_ARGUMENT,
+                             "browserAction.setIcon(): Could not read the icon");
+    return;
+  }
+
+  ephy_web_extension_manager_browseraction_set_icon (manager, sender->extension, pixbuf);
+  g_object_unref (pixbuf);
+
+  g_task_return_pointer (task, NULL, NULL);
+}
+
 static EphyWebExtensionApiHandler browseraction_handlers[] = {
   {"setBadgeText", browseraction_handler_set_badge_text},
   {"setBadgeBackgroundColor", browseraction_handler_set_badge_background_color},
+  {"setTitle", browseraction_handler_set_title},
+  {"setIcon", browseraction_handler_set_icon},
 };
 
 void

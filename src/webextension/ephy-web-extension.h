@@ -178,6 +178,8 @@ gboolean               ephy_web_extension_has_host_permission             (EphyW
 
 const char * const    *ephy_web_extension_get_host_permissions            (EphyWebExtension *self);
 
+GPtrArray             *ephy_web_extension_get_permissions                (EphyWebExtension *self);
+
 JsonNode              *ephy_web_extension_get_local_storage               (EphyWebExtension *self);
 
 void                   ephy_web_extension_save_local_storage              (EphyWebExtension *self);

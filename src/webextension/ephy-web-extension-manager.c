@@ -36,6 +36,7 @@
 #include "api/menus.h"
 #include "api/notifications.h"
 #include "api/pageaction.h"
+#include "api/permissions.h"
 #include "api/runtime.h"
 #include "api/storage.h"
 #include "api/tabs.h"
@@ -91,6 +92,7 @@ EphyWebExtensionApiHandler api_handlers[] = {
   {"downloads", ephy_web_extension_api_downloads_handler},
   {"menus", ephy_web_extension_api_menus_handler},
   {"notifications", ephy_web_extension_api_notifications_handler},
+  {"permissions", ephy_web_extension_api_permissions_handler},
   {"pageAction", ephy_web_extension_api_pageaction_handler},
   {"runtime", ephy_web_extension_api_runtime_handler},
   {"storage", ephy_web_extension_api_storage_handler},
@@ -1575,6 +1577,32 @@ ephy_web_extension_manager_browseraction_set_badge_text (EphyWebExtensionManager
 }
 
 void
+ephy_web_extension_manager_browseraction_set_title (EphyWebExtensionManager *self,
+                                                    EphyWebExtension        *web_extension,
+                                                    const char              *title)
+{
+  EphyBrowserAction *action = EPHY_BROWSER_ACTION (g_hash_table_lookup (self->browser_action_map, web_extension));
+
+  if (!action)
+    return;
+
+  ephy_browser_action_set_title (action, title);
+}
+
+void
+ephy_web_extension_manager_browseraction_set_icon (EphyWebExtensionManager *self,
+                                                   EphyWebExtension        *web_extension,
+                                                   GdkPixbuf               *icon)
+{
+  EphyBrowserAction *action = EPHY_BROWSER_ACTION (g_hash_table_lookup (self->browser_action_map, web_extension));
+
+  if (!action)
+    return;
+
+  ephy_browser_action_set_icon (action, icon);
+}
+
+void
 ephy_web_extension_manager_browseraction_set_badge_background_color (EphyWebExtensionManager *self,
                                                                      EphyWebExtension        *web_extension,
                                                                      GdkRGBA                 *color)
@@ -1682,6 +1710,26 @@ ephy_web_extension_manager_is_active (EphyWebExtensionManager *self,
   return g_strv_contains ((const char * const *)web_extensions_active, ephy_web_extension_get_name (web_extension));
 }
 
+/*
+ * The extension's background page has finished loading, so its scripts have
+ * run and it is listening. This is the browser starting up as far as the
+ * extension is concerned, which is what runtime.onStartup means.
+ */
+static void
+on_background_load_changed (WebKitWebView *view,
+                            WebKitLoadEvent event,
+                            gpointer       user_data)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  EphyWebExtension *web_extension = user_data;
+
+  if (event != WEBKIT_LOAD_FINISHED)
+    return;
+
+  ephy_web_extension_manager_emit_in_background_view (manager, web_extension,
+                                                      "runtime.onStartup", "null");
+}
+
 static void
 run_background_script (EphyWebExtensionManager *self,
                        EphyWebExtension        *web_extension)
@@ -1697,6 +1745,9 @@ run_background_script (EphyWebExtensionManager *self,
   /* Create new background web_view */
   background = ephy_web_extensions_manager_create_web_extensions_webview (web_extension);
   ephy_web_extension_manager_set_background_web_view (self, web_extension, WEBKIT_WEB_VIEW (background));
+
+  g_signal_connect_object (background, "load-changed",
+                           G_CALLBACK (on_background_load_changed), web_extension, 0);
 
   if (page) {
     g_autofree char *page_uri = g_strdup_printf ("ephy-webextension://%s/%s", ephy_web_extension_get_guid (web_extension), page);
@@ -1738,6 +1789,158 @@ window_added_callback_data_free (gpointer data)
   g_free (callback_data);
 }
 
+/*
+ * The events that say what a tab is doing.
+ *
+ * An extension that shows the state of a page needs to hear about it: the
+ * address it went to, the title it has, and whether it has finished
+ * loading. Without these the extension is guessing, and most of them give
+ * up and log an error.
+ */
+
+static void
+emit_tab_updated (EphyWebExtensionManager *manager,
+                  EphyWebExtension        *web_extension,
+                  EphyWebView             *view,
+                  const char              *key,
+                  const char              *value)
+{
+  g_autoptr (JsonBuilder) builder = json_builder_new ();
+  g_autoptr (JsonNode) root = NULL;
+  g_autoptr (JsonNode) tab_json = NULL;
+  g_autofree char *tab_id = NULL;
+  g_autofree char *change_json = NULL;
+  const char *args[3];
+
+  /* The address and the title are the user's, so they are only for an
+   * extension that is allowed to see the tab. */
+  if (!ephy_web_extension_has_tab_or_host_permission (web_extension, view, TRUE))
+    return;
+
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, "tabId");
+  json_builder_add_int_value (builder, ephy_web_view_get_uid (view));
+
+  json_builder_set_member_name (builder, "changeInfo");
+  json_builder_begin_object (builder);
+  json_builder_set_member_name (builder, key);
+  json_builder_add_string_value (builder, value ? value : "");
+  json_builder_end_object (builder);
+
+  json_builder_end_object (builder);
+
+  root = json_builder_get_root (builder);
+  change_json = json_to_string (root, FALSE);
+
+  tab_json = ephy_web_extension_api_tabs_create_tab_object (web_extension, view);
+  if (!tab_json)
+    return;
+
+  /* The listener is given the tab, what changed, and the tab again. */
+  tab_id = g_strdup_printf ("%ld", ephy_web_view_get_uid (view));
+  args[0] = tab_id;
+  args[1] = change_json;
+  args[2] = json_to_string (tab_json, FALSE);
+
+  ephy_web_extension_manager_emit_in_extension_views_args (manager, web_extension,
+                                                             "tabs.onUpdated", args);
+}
+
+static void
+on_tab_load_changed (EphyWebView      *view,
+                     WebKitLoadEvent   event,
+                     gpointer          user_data)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  EphyWebExtension *web_extension = user_data;
+  const char *status;
+
+  switch (event) {
+  case WEBKIT_LOAD_STARTED:
+  case WEBKIT_LOAD_REDIRECTED:
+    status = "loading";
+    break;
+  case WEBKIT_LOAD_FINISHED:
+    status = "complete";
+    break;
+  default:
+    return;
+  }
+
+  emit_tab_updated (manager, web_extension, view, "status", status);
+}
+
+static void
+on_tab_uri_changed (GObject      *object,
+                    GParamSpec   *pspec,
+                    gpointer      user_data)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  EphyWebExtension *web_extension = user_data;
+  EphyWebView *view = EPHY_WEB_VIEW (object);
+
+  emit_tab_updated (manager, web_extension, view, "url", ephy_web_view_get_address (view));
+}
+
+static void
+on_tab_title_changed (GObject      *object,
+                      GParamSpec   *pspec,
+                      gpointer      user_data)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  EphyWebExtension *web_extension = user_data;
+  EphyWebView *view = EPHY_WEB_VIEW (object);
+
+  emit_tab_updated (manager, web_extension, view, "title",
+                    webkit_web_view_get_title (WEBKIT_WEB_VIEW (view)));
+}
+
+static void
+on_selected_page_changed (GObject      *object,
+                          GParamSpec   *pspec,
+                          gpointer      user_data)
+{
+  EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
+  EphyWebExtension *web_extension = user_data;
+  AdwTabView *tab_view = ADW_TAB_VIEW (object);
+  AdwTabPage *page;
+  GtkWidget *embed;
+  EphyWebView *view;
+  g_autoptr (JsonBuilder) builder = json_builder_new ();
+  g_autoptr (JsonNode) root = NULL;
+  GtkWidget *window;
+
+  page = adw_tab_view_get_selected_page (tab_view);
+  if (!page)
+    return;
+
+  embed = adw_tab_page_get_child (page);
+  if (!EPHY_IS_EMBED (embed))
+    return;
+
+  view = ephy_embed_get_web_view (EPHY_EMBED (embed));
+  if (!view)
+    return;
+
+  window = GTK_WIDGET (gtk_widget_get_root (GTK_WIDGET (view)));
+  if (!EPHY_IS_WINDOW (window))
+    return;
+
+  json_builder_begin_object (builder);
+  json_builder_set_member_name (builder, "tabId");
+  json_builder_add_int_value (builder, ephy_web_view_get_uid (view));
+  json_builder_set_member_name (builder, "windowId");
+  json_builder_add_int_value (builder, ephy_window_get_uid (EPHY_WINDOW (window)));
+  json_builder_end_object (builder);
+
+  root = json_builder_get_root (builder);
+
+  ephy_web_extension_manager_emit_in_extension_views (manager, web_extension,
+                                                       "tabs.onActivated",
+                                                       json_to_string (root, FALSE));
+}
+
 static void
 on_page_attached (AdwTabView *self,
                   AdwTabPage *page,
@@ -1755,6 +1958,19 @@ on_page_attached (AdwTabView *self,
   /* create_tab_object() returns NULL when the view has no EphyWindow root. */
   if (json)
     ephy_web_extension_manager_emit_in_extension_views (manager, web_extension, "tabs.onCreated", json_to_string (json, FALSE));
+
+  /* The tab now has something to say about itself. A page can be attached
+   * more than once, so this is only done the first time. */
+  if (!g_object_get_data (G_OBJECT (view), "ephy-extension-signals-connected")) {
+    g_object_set_data (G_OBJECT (view), "ephy-extension-signals-connected", GINT_TO_POINTER (1));
+
+    g_signal_connect_object (view, "load-changed",
+                             G_CALLBACK (on_tab_load_changed), web_extension, 0);
+    g_signal_connect_object (view, "notify::uri",
+                             G_CALLBACK (on_tab_uri_changed), web_extension, 0);
+    g_signal_connect_object (view, "notify::title",
+                             G_CALLBACK (on_tab_title_changed), web_extension, 0);
+  }
 }
 
 static void
@@ -1766,12 +1982,27 @@ on_page_detached (AdwTabView *self,
   EphyWebExtensionManager *manager = ephy_web_extension_manager_get_default ();
   EphyWebExtension *web_extension = user_data;
   g_autofree char *tab_json = NULL;
+  g_autofree char *info_json = NULL;
   GtkWidget *embed = adw_tab_page_get_child (page);
   EphyWebView *view;
+  GtkWidget *window;
+  const char *args[2];
 
   view = ephy_embed_get_web_view (EPHY_EMBED (embed));
   tab_json = g_strdup_printf ("%ld", ephy_web_view_get_uid (view));
-  ephy_web_extension_manager_emit_in_extension_views (manager, web_extension, "tabs.onRemoved", tab_json);
+
+  /* The listener is given the tab that went, and what happened to it. */
+  window = GTK_WIDGET (gtk_widget_get_root (GTK_WIDGET (view)));
+  info_json = g_strdup_printf ("{\"windowId\": %ld, \"isWindowClosing\": false}",
+                               EPHY_IS_WINDOW (window)
+                                 ? ephy_window_get_uid (EPHY_WINDOW (window))
+                                 : 0);
+
+  args[0] = tab_json;
+  args[1] = info_json;
+
+  ephy_web_extension_manager_emit_in_extension_views_args (manager, web_extension,
+                                                             "tabs.onRemoved", args);
 }
 
 static gboolean
@@ -1815,6 +2046,7 @@ application_window_added_cb (EphyShell        *shell,
   adw_tab_view = ephy_tab_view_get_tab_view (tab_view);
   g_signal_connect (G_OBJECT (adw_tab_view), "page-attached", G_CALLBACK (on_page_attached), web_extension);
   g_signal_connect (G_OBJECT (adw_tab_view), "page-detached", G_CALLBACK (on_page_detached), web_extension);
+  g_signal_connect (G_OBJECT (adw_tab_view), "notify::selected-page", G_CALLBACK (on_selected_page_changed), web_extension);
 
   /* At this point the EphyWindow has no EphyEmbed child so we can't get information from it.
    * We also can't really know ahead of time if multiple tabs are opening so simply adding a delay
@@ -1844,6 +2076,7 @@ application_window_removed_cb (EphyShell        *shell,
   adw_tab_view = ephy_tab_view_get_tab_view (tab_view);
   g_signal_handlers_disconnect_by_func (G_OBJECT (adw_tab_view), G_CALLBACK (on_page_attached), web_extension);
   g_signal_handlers_disconnect_by_func (G_OBJECT (adw_tab_view), G_CALLBACK (on_page_detached), web_extension);
+  g_signal_handlers_disconnect_by_func (G_OBJECT (adw_tab_view), G_CALLBACK (on_selected_page_changed), web_extension);
 }
 
 static void
@@ -2293,13 +2526,158 @@ ephy_web_extension_manager_emit_in_extension_views_internal (EphyWebExtensionMan
     g_warning ("Duplicate message GUID");
 }
 
+/*
+ * An event whose listener takes more than one argument.
+ *
+ * The JavaScript side hands every argument to the listener as it is, so
+ * the arguments have to be a list, not one value. tabs.onUpdated is the
+ * one that matters: its listener is given the tab, what changed, and the
+ * tab again.
+ */
+static void
+emit_args_now (EphyWebExtensionManager *self,
+               EphyWebExtension        *web_extension,
+               const char              *name,
+               const char * const       *args)
+{
+  WebKitWebView *background_view = ephy_web_extension_manager_get_background_web_view (self, web_extension);
+  GPtrArray *popup_views = g_hash_table_lookup (self->popup_web_views, web_extension);
+  g_autoptr (GString) script = g_string_new (NULL);
+
+  g_string_append_printf (script, "window.browser.%s._emit(", name);
+  for (guint i = 0; args[i]; i++)
+    g_string_append_printf (script, "%s%s", i ? "," : "", args[i]);
+  g_string_append (script, ");");
+
+  if (background_view) {
+    webkit_web_view_evaluate_javascript (background_view,
+                                         script->str, -1,
+                                         NULL, NULL, NULL,
+                                         NULL, NULL);
+  }
+
+  if (popup_views) {
+    for (guint i = 0; i < popup_views->len; i++) {
+      WebKitWebView *popup_view = g_ptr_array_index (popup_views, i);
+
+      webkit_web_view_evaluate_javascript (popup_view,
+                                           script->str, -1,
+                                           NULL, NULL, NULL,
+                                           NULL, NULL);
+    }
+  }
+}
+
+/*
+ * An event that goes to an extension's own pages.
+ *
+ * The pages are loaded by the browser, and their JavaScript is not there
+ * until it has been read and run. An event that arrives before that
+ * finds an empty page, and the extension never hears about it. So the
+ * event waits until the page has finished loading.
+ */
+
+typedef struct {
+  EphyWebExtensionManager *manager;
+  EphyWebExtension *web_extension;
+  char *name;
+  GPtrArray *args;
+  guint attempts_left;
+} DeferredEmit;
+
+static void
+deferred_emit_free (DeferredEmit *deferred)
+{
+  g_clear_object (&deferred->web_extension);
+  g_free (deferred->name);
+  g_clear_pointer (&deferred->args, g_ptr_array_unref);
+  g_free (deferred);
+}
+
+static gboolean
+background_view_is_ready (WebKitWebView *view)
+{
+  /* The load progress is one when the page and everything it needs has
+   * been read. */
+  return webkit_web_view_get_estimated_load_progress (view) >= 1.0;
+}
+
+static gboolean
+deferred_emit_cb (gpointer user_data)
+{
+  DeferredEmit *deferred = user_data;
+  WebKitWebView *background_view;
+
+  background_view = ephy_web_extension_manager_get_background_web_view (deferred->manager,
+                                                                       deferred->web_extension);
+
+  if (background_view && !background_view_is_ready (background_view)) {
+    if (deferred->attempts_left > 0) {
+      deferred->attempts_left--;
+      return G_SOURCE_CONTINUE;
+    }
+
+    /* The page never turned up. There is nothing to say to it. */
+    return G_SOURCE_REMOVE;
+  }
+
+  emit_args_now (deferred->manager,
+                 deferred->web_extension,
+                 deferred->name,
+                 (const char * const *) deferred->args->pdata);
+
+  return G_SOURCE_REMOVE;
+}
+
+static void
+emit_in_extension_views_when_ready (EphyWebExtensionManager *self,
+                                    EphyWebExtension        *web_extension,
+                                    const char              *name,
+                                    const char * const       *args)
+{
+  WebKitWebView *background_view;
+  DeferredEmit *deferred;
+
+  background_view = ephy_web_extension_manager_get_background_web_view (self, web_extension);
+
+  if (!background_view || background_view_is_ready (background_view)) {
+    emit_args_now (self, web_extension, name, args);
+    return;
+  }
+
+  deferred = g_new0 (DeferredEmit, 1);
+  deferred->manager = self;
+  deferred->web_extension = g_object_ref (web_extension);
+  deferred->name = g_strdup (name);
+  deferred->args = g_ptr_array_new_with_free_func (g_free);
+  for (guint i = 0; args[i]; i++)
+    g_ptr_array_add (deferred->args, g_strdup (args[i]));
+  deferred->attempts_left = 40;
+
+  g_timeout_add_full (G_PRIORITY_DEFAULT, 250, deferred_emit_cb, deferred, (GDestroyNotify)deferred_emit_free);
+}
+
 void
 ephy_web_extension_manager_emit_in_extension_views (EphyWebExtensionManager *self,
                                                     EphyWebExtension        *web_extension,
                                                     const char              *name,
                                                     const char              *json)
 {
-  ephy_web_extension_manager_emit_in_extension_views_internal (self, web_extension, NULL, name, json, NULL);
+  const char *args[2];
+
+  args[0] = json;
+  args[1] = NULL;
+
+  emit_in_extension_views_when_ready (self, web_extension, name, args);
+}
+
+void
+ephy_web_extension_manager_emit_in_extension_views_args (EphyWebExtensionManager *self,
+                                                          EphyWebExtension        *web_extension,
+                                                          const char              *name,
+                                                          const char * const       *args)
+{
+  emit_in_extension_views_when_ready (self, web_extension, name, args);
 }
 
 void

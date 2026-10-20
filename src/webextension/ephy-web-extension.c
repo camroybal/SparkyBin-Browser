@@ -1492,6 +1492,33 @@ ephy_web_extension_get_guid (EphyWebExtension *self)
   return self->guid;
 }
 
+/**
+ * ephy_web_extension_get_permissions:
+ * @self: an #EphyWebExtension
+ *
+ * The names of the permissions the extension was installed with.
+ *
+ * The strings belong to the extension, so they are only good for as long as
+ * it is.
+ *
+ * Returns: (transfer container) (element-type utf8): the permissions
+ */
+GPtrArray *
+ephy_web_extension_get_permissions (EphyWebExtension *self)
+{
+  GPtrArray *permissions;
+  GHashTableIter iter;
+  gpointer key;
+
+  permissions = g_ptr_array_new ();
+
+  g_hash_table_iter_init (&iter, self->permissions);
+  while (g_hash_table_iter_next (&iter, &key, NULL))
+    g_ptr_array_add (permissions, key);
+
+  return permissions;
+}
+
 const char * const *
 ephy_web_extension_get_host_permissions (EphyWebExtension *self)
 {

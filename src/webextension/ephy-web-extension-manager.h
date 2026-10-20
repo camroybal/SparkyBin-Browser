@@ -88,6 +88,11 @@ void                     ephy_web_extension_manager_emit_in_extension_views     
                                                                                      const char              *name,
                                                                                      const char              *json);
 
+void                     ephy_web_extension_manager_emit_in_extension_views_args    (EphyWebExtensionManager *self,
+                                                                                     EphyWebExtension        *web_extension,
+                                                                                     const char              *name,
+                                                                                     const char * const       *args);
+
 void                     ephy_web_extension_manager_emit_in_extension_views_with_reply
                                                                                     (EphyWebExtensionManager *self,
                                                                                      EphyWebExtension        *web_extension,
@@ -113,6 +118,12 @@ GtkWidget                *ephy_web_extensions_manager_create_web_extensions_webv
 void                      ephy_web_extension_manager_foreach_extension              (EphyWebExtensionManager     *self,
                                                                                      EphyWebExtensionForeachFunc  func,
                                                                                      gpointer                     user_data);
+void                      ephy_web_extension_manager_browseraction_set_title        (EphyWebExtensionManager *self,
+                                                                           EphyWebExtension        *web_extension,
+                                                                           const char              *title);
+void                      ephy_web_extension_manager_browseraction_set_icon         (EphyWebExtensionManager *self,
+                                                                           EphyWebExtension        *web_extension,
+                                                                           GdkPixbuf               *icon);
 void                      ephy_web_extension_manager_browseraction_set_badge_text   (EphyWebExtensionManager *self,
                                                                                      EphyWebExtension        *web_extension,
                                                                                      const char              *text);

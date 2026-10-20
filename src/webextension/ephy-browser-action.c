@@ -28,6 +28,8 @@ struct _EphyBrowserAction {
   EphyWebExtension *web_extension;
   char *badge_text;
   GdkRGBA *badge_color;
+  char *title;
+  GdkPixbuf *icon;
 };
 
 G_DEFINE_FINAL_TYPE (EphyBrowserAction, ephy_browser_action, G_TYPE_OBJECT)
@@ -36,9 +38,11 @@ typedef enum {
   PROP_WEB_EXTENSION = 1,
   PROP_BADGE_TEXT,
   PROP_BADGE_COLOR,
+  PROP_TITLE,
+  PROP_ICON,
 } EphyBrowserActionProps;
 
-static GParamSpec *properties[PROP_BADGE_COLOR + 1];
+static GParamSpec *properties[PROP_ICON + 1];
 
 EphyBrowserAction *
 ephy_browser_action_new (EphyWebExtension *web_extension)
@@ -51,15 +55,42 @@ ephy_browser_action_new (EphyWebExtension *web_extension)
 const char *
 ephy_browser_action_get_title (EphyBrowserAction *self)
 {
-  const char *short_name = ephy_web_extension_get_short_name (self->web_extension);
+  const char *short_name;
+
+  /* An extension can give its button a title of its own. */
+  if (self->title)
+    return self->title;
+
+  short_name = ephy_web_extension_get_short_name (self->web_extension);
 
   return short_name && *short_name ? short_name : ephy_web_extension_get_name (self->web_extension);
+}
+
+void
+ephy_browser_action_set_title (EphyBrowserAction *self,
+                               const char       *title)
+{
+  g_set_str (&self->title, title);
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_TITLE]);
+}
+
+void
+ephy_browser_action_set_icon (EphyBrowserAction *self,
+                              GdkPixbuf        *icon)
+{
+  g_clear_object (&self->icon);
+  self->icon = icon;
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ICON]);
 }
 
 GdkPixbuf *
 ephy_browser_action_get_pixbuf (EphyBrowserAction *self,
                                 gint64             size)
 {
+  /* An extension can give its button an icon of its own. */
+  if (self->icon)
+    return g_object_ref (self->icon);
+
   return ephy_web_extension_get_icon (self->web_extension, size);
 }
 
@@ -90,6 +121,8 @@ ephy_browser_action_finalize (GObject *object)
 
   g_clear_pointer (&self->badge_text, g_free);
   g_clear_pointer (&self->badge_color, gdk_rgba_free);
+  g_clear_pointer (&self->title, g_free);
+  g_clear_object (&self->icon);
   g_clear_object (&self->web_extension);
 
   G_OBJECT_CLASS (ephy_browser_action_parent_class)->finalize (object);
@@ -112,6 +145,12 @@ ephy_browser_action_get_property (GObject    *object,
       break;
     case PROP_BADGE_COLOR:
       g_value_set_boxed (value, self->badge_color);
+      break;
+    case PROP_TITLE:
+      g_value_set_string (value, self->title);
+      break;
+    case PROP_ICON:
+      g_value_set_object (value, self->icon);
       break;
   }
 }
@@ -138,6 +177,13 @@ ephy_browser_action_set_property (GObject      *object,
       self->badge_color = color ? gdk_rgba_copy (color) : NULL;
       break;
     }
+    case PROP_TITLE:
+      g_set_str (&self->title, g_value_get_string (value));
+      break;
+    case PROP_ICON:
+      g_clear_object (&self->icon);
+      self->icon = g_value_dup_object (value);
+      break;
   }
 }
 
@@ -165,6 +211,16 @@ ephy_browser_action_class_init (EphyBrowserActionClass *klass)
                         NULL, NULL,
                         GDK_TYPE_RGBA,
                         G_PARAM_READWRITE | G_PARAM_STATIC_NAME);
+  properties[PROP_TITLE] =
+    g_param_spec_string ("title",
+                         NULL, NULL,
+                         NULL,
+                         G_PARAM_READWRITE | G_PARAM_STATIC_NAME);
+  properties[PROP_ICON] =
+    g_param_spec_object ("icon",
+                         NULL, NULL,
+                         GDK_TYPE_PIXBUF,
+                         G_PARAM_READWRITE | G_PARAM_STATIC_NAME);
 
   g_object_class_install_properties (object_class, G_N_ELEMENTS (properties), properties);
 }

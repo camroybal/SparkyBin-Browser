@@ -89,6 +89,32 @@ is not ours to free. Two places took it and then freed it, and the shell
 freed it again and found the memory gone. The browser died on the way
 out, every time, with or without an extension installed.
 
+### An extension's own JavaScript was not there yet
+
+The background page of an extension is loaded by the browser, and its
+JavaScript is not there until it has been read and run. An event that
+arrived in between found an empty page, and the extension never heard
+about it.
+
+Events now wait for the page to finish loading before they are sent.
+
+## What was put in
+
+- **`browser.permissions.contains` and `browser.permissions.getAll`.** A
+  question about the manifest, so it can be answered. Proton Pass asked
+  for one and was told nothing.
+- **`browser.runtime.onStartup`.** Sent when the background page has
+  loaded, which is the browser starting up as far as the extension is
+  concerned.
+- **`browser.browserAction.setTitle` and `setIcon`.** The title and the
+  icon of the extension's button. The icon is either a path inside the
+  extension or a data URL.
+- **`tabs.onUpdated` and `tabs.onActivated`.** The two events that say
+  what a tab is doing, which is most of what an extension does. The first
+  is sent with the three arguments Firefox uses.
+- **`tabs.onRemoved`** now says what happened to the tab, not just which
+  tab it was.
+
 ## What is still missing
 
 These are the calls the extension JavaScript offers that the browser does
@@ -135,35 +161,36 @@ them. The ones that never arrive:
 
     cookies.onChanged        permissions.onRemoved
     notifications.onClosed   runtime.onConnect
-    notifications.onShown    tabs.onActivated
-    pageAction.onClicked     tabs.onAttached
-    permissions.onAdded      tabs.onDetached
-                             tabs.onHighlighted
+    notifications.onShown    tabs.onAttached
+    pageAction.onClicked     tabs.onDetached
+    permissions.onAdded      tabs.onHighlighted
                              tabs.onMoved
                              tabs.onReplaced
-                             tabs.onUpdated
                              tabs.onZoomChange
                              windows.onFocusChanged
 
 `tabs.onUpdated` and `tabs.onActivated` are the two that matter most:
 without them an extension cannot tell what happened to a tab, which is
-most of what an extension does.
+most of what an extension does. Both are sent now, and `tabs.onUpdated`
+is sent with the three arguments Firefox uses: the tab, what changed, and
+the tab again.
 
 ### Calls with no handler
 
-    browserAction.setBadgeBackgroundColor   pageAction.getTitle
-    browserAction.setBadgeText              pageAction.hide
-    downloads.getFileIcon                   pageAction.setIcon
-    downloads.pause                         pageAction.setTitle
-    downloads.resume                        pageAction.show
-    menus.removeAll                         permissions.contains
-    menus.update                            permissions.getAll
+    downloads.getFileIcon                   pageAction.getTitle
+    downloads.pause                         pageAction.hide
+    downloads.resume                        pageAction.setIcon
+    menus.removeAll                         pageAction.setTitle
+    menus.update                            pageAction.show
     runtime.connectNative                   permissions.remove
     runtime.sendNativeMessage               permissions.request
     runtime.setUninstallURL
 
-`permissions.contains` is the one to do first: an extension asks it
-whether it has a permission, and without an answer it cannot go on.
+`permissions.request` cannot be answered: it is a question for the user,
+and the browser has no way to ask one. `permissions.remove` cannot either,
+because there are no permissions that were granted at runtime to remove.
+
+The rest could be filled in.
 
 ### Namespaces that are not there
 

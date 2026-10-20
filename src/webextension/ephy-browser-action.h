@@ -39,5 +39,7 @@ void               ephy_browser_action_set_badge_text (EphyBrowserAction *self, 
 const char        *ephy_browser_action_get_badge_text (EphyBrowserAction *self);
 void               ephy_browser_action_set_badge_background_color (EphyBrowserAction *self, GdkRGBA *color);
 GdkRGBA           *ephy_browser_action_get_badge_background_color (EphyBrowserAction *self);
+void               ephy_browser_action_set_title (EphyBrowserAction *self, const char *title);
+void               ephy_browser_action_set_icon (EphyBrowserAction *self, GdkPixbuf *icon);
 
 G_END_DECLS

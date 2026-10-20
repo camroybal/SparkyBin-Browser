@@ -96,6 +96,32 @@ on_badge_color (EphyBrowserAction *action,
 }
 
 static void
+on_title_changed (EphyBrowserAction *action,
+                  GParamSpec        *spec,
+                  gpointer           user_data)
+{
+  EphyBrowserActionRow *self = EPHY_BROWSER_ACTION_ROW (user_data);
+
+  gtk_label_set_label (GTK_LABEL (self->title_label),
+                       ephy_browser_action_get_title (EPHY_BROWSER_ACTION (self->browser_action)));
+}
+
+static void
+on_icon_changed (EphyBrowserAction *action,
+                 GParamSpec        *spec,
+                 gpointer           user_data)
+{
+  EphyBrowserActionRow *self = EPHY_BROWSER_ACTION_ROW (user_data);
+  g_autoptr (GdkTexture) texture = NULL;
+  GdkPixbuf *pixbuf;
+
+  pixbuf = ephy_browser_action_get_pixbuf (EPHY_BROWSER_ACTION (self->browser_action), 16);
+  if (pixbuf)
+    texture = ephy_texture_new_for_pixbuf (pixbuf);
+  gtk_image_set_from_paintable (GTK_IMAGE (self->browser_action_image), GDK_PAINTABLE (texture));
+}
+
+static void
 ephy_browser_action_row_constructed (GObject *object)
 {
   EphyBrowserActionRow *self = EPHY_BROWSER_ACTION_ROW (object);
@@ -112,6 +138,8 @@ ephy_browser_action_row_constructed (GObject *object)
 
   ephy_indicator_bin_set_badge (EPHY_INDICATOR_BIN (self->badge), ephy_browser_action_get_badge_text (EPHY_BROWSER_ACTION (self->browser_action)));
   g_signal_connect (EPHY_BROWSER_ACTION (self->browser_action), "notify::badge-text", G_CALLBACK (on_badge_text), self);
+  g_signal_connect (EPHY_BROWSER_ACTION (self->browser_action), "notify::title", G_CALLBACK (on_title_changed), self);
+  g_signal_connect (EPHY_BROWSER_ACTION (self->browser_action), "notify::icon", G_CALLBACK (on_icon_changed), self);
   g_signal_connect (EPHY_BROWSER_ACTION (self->browser_action), "notify::badge-color", G_CALLBACK (on_badge_color), self);
 
   G_OBJECT_CLASS (ephy_browser_action_row_parent_class)->constructed (object);

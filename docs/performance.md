@@ -146,10 +146,27 @@ constrained rather than merely difficult.
 ### 6. The cache model is never set
 
 `webkit_web_context_set_cache_model()` exists and the browser never calls
-it, so it gets WebKit's default. The default is right for a browser, but
-"right by default" is not the same as "chosen", and the difference is a
-cache sized for a single page rather than for a browsing session. The
-setting is one line, and it is measurable in resident memory.
+it, so it gets WebKit's default.
+
+The default is `WEBKIT_CACHE_MODEL_WEB_BROWSER`, which is the one that
+caches "a very large number of resources and previously viewed content".
+It is the right default for a browser, and it is also the one that uses
+the most memory. The other two are `WEBKIT_CACHE_MODEL_DOCUMENT_BROWSER`,
+which caches a moderate amount, and `WEBKIT_CACHE_MODEL_DOCUMENT_VIEWER`,
+which caches nothing at all.
+
+So this is not a fix but a choice to offer: how much the browser should
+keep in the cache is a question a user may want to answer, and it is the
+largest single lever on the memory number.
+
+The numbers to work against, in a container with software rendering, so
+they are bigger than on a real desktop but comparable with each other:
+
+    1 tab   416 ms to a window   3 processes   487 MiB
+    4 tabs  417 ms to a window   6 processes   804 MiB
+
+Each extra tab costs about 105 MiB, which is WebKit giving the site its own
+process. The cache is on top of that.
 
 ### 7. The extension scan is on the startup path
 
@@ -159,13 +176,15 @@ therefore triggered by whatever asks for the manager first, which is usually
 something during the first window's construction, so it lands on the startup
 path.
 
-Two costs: the directory is read while the window is being built, and no
-extension is known until the scan finishes, so a page that loads immediately
-does not have its extension API yet.
+**Measured, and it does not matter.** With thirteen extensions installed,
+the time to a window was 520 ms, and with none it was 519 ms. The scan is
+asynchronous and does not hold the window up.
 
-Making the scan happen earlier, off the window's construction path, would
-take it off the critical path. The singleton makes this easy to get wrong
-in the other direction though, so it needs care.
+The other half of the note is still true and is not about speed at all: no
+extension is known until the scan finishes, so a page that loads in the
+first moments does not have its extension API yet. That is inherent to
+installing extensions, and there is no way around it other than not having
+any.
 
 ### 8. Autofill and the password manager run on every page
 

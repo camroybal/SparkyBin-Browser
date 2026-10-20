@@ -6,6 +6,7 @@ ephywebextension_src = [
   'webextension/api/downloads.c',
   'webextension/api/menus.c',
   'webextension/api/notifications.c',
+  'webextension/api/permissions.c',
   'webextension/api/pageaction.c',
   'webextension/api/runtime.c',
   'webextension/api/storage.c',
