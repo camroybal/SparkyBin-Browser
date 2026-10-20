@@ -337,14 +337,28 @@ update_tabs (EphySidebarPanel *self)
   for (int i = 0; i < n_pages; i++) {
     GtkWidget *row;
     AdwTabPage *page;
+    GtkWidget *embed;
+    const char *title;
 
     page = adw_tab_view_get_nth_page (self->tab_view, i);
     if (!page)
       continue;
 
+    embed = adw_tab_page_get_child (page);
+    title = adw_tab_page_get_title (page);
+
+    /* A page that has not got a title yet is shown by its address, the
+     * way the tab bar shows it. */
+    if ((!title || !*title) && EPHY_IS_EMBED (embed)) {
+      EphyWebView *view = ephy_embed_get_web_view (EPHY_EMBED (embed));
+
+      if (view)
+        title = ephy_web_view_get_address (view);
+    }
+
     row = adw_action_row_new ();
     adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row),
-                                   adw_tab_page_get_title (page) ? adw_tab_page_get_title (page) : _("Untitled"));
+                                   title && *title ? title : _("Untitled"));
     g_object_set_data (G_OBJECT (row), "page", page);
     g_signal_connect (row, "activated", G_CALLBACK (on_tab_row_activated), self);
 
@@ -377,9 +391,12 @@ on_toggle_changed (AdwToggleGroup *group,
 
   if (g_strcmp0 (name, "tabs") == 0) {
     gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "tabs");
+    /* The search is over the bookmarks, so it has no place here. */
+    gtk_widget_set_visible (self->search_entry, FALSE);
     update_tabs (self);
   } else {
     gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "bookmarks");
+    gtk_widget_set_visible (self->search_entry, TRUE);
   }
 
   g_settings_set_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_MODE,
@@ -547,6 +564,10 @@ ephy_sidebar_panel_set_window (EphySidebarPanel *self,
                            G_CALLBACK (on_tabs_changed), self, 0);
   g_signal_connect_object (self->tab_view, "notify::selected-page",
                            G_CALLBACK (on_tabs_changed), self, 0);
+
+  /* The window already has a tab by now, so the list is filled in here
+   * rather than waiting to be told about it. */
+  update_tabs (self);
 }
 
 /**
