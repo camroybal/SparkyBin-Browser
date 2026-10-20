@@ -71,6 +71,32 @@ if get_option('unit_tests').enabled()
        env: envs
   )
 
+  filters_compiler_test = executable('test-ephy-filters-compiler',
+    'test-ephy-filters-compiler.c',
+    dependencies: ephymisc_dep,
+    c_args: test_cargs,
+  )
+  test('Filters compiler test',
+       filters_compiler_test,
+       env: envs
+  )
+
+  filters_block_test = executable('test-ephy-filters-block',
+    'test-ephy-filters-block.c',
+    dependencies: ephymisc_dep,
+    c_args: test_cargs,
+  )
+  test('Filters block test',
+       filters_block_test,
+       env: envs
+  )
+
+  filters_compiler_web_test = executable('test-ephy-filters-compiler-web',
+    'test-ephy-filters-compiler-web.c',
+    dependencies: ephymisc_dep,
+    c_args: test_cargs,
+  )
+
   history_test = executable('test-ephy-history',
     'ephy-history-test.c',
     dependencies: ephymain_dep,

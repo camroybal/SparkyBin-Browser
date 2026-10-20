@@ -19,6 +19,7 @@ libephymisc_sources = [
   'ephy-favicon-helpers.c',
   'ephy-file-dialog-utils.c',
   'ephy-file-helpers.c',
+  'ephy-filters-compiler.c',
   'ephy-flatpak-utils.c',
   'ephy-json-utils.c',
   'ephy-langs.c',

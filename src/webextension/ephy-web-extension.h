@@ -138,6 +138,8 @@ GList                 *ephy_web_extension_get_content_scripts             (EphyW
 GList                 *ephy_web_extension_get_content_script_js           (EphyWebExtension *self,
                                                                            gpointer          content_script);
 
+GHashTable            *ephy_web_extension_get_resources                   (EphyWebExtension *self);
+
 gconstpointer          ephy_web_extension_get_resource                    (EphyWebExtension *self,
                                                                            const char       *name,
                                                                            gsize            *length);

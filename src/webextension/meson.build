@@ -16,6 +16,7 @@ ephywebextension_src = [
   'webextension/ephy-indicator-bin.c',
   'webextension/adw-widget-utils.c',
   'webextension/ephy-browser-action.c',
+  'webextension/ephy-extension-filters.c',
   'webextension/ephy-browser-action-row.c',
   'webextension/ephy-web-extension-manager.c',
   'webextension/ephy-web-extension.c',

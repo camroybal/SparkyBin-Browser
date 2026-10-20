@@ -123,6 +123,20 @@ ephy_web_extension_has_resource (EphyWebExtension *self,
   return g_hash_table_contains (self->resources, name);
 }
 
+/**
+ * ephy_web_extension_get_resources:
+ * @self: an #EphyWebExtension
+ *
+ * The files the extension is made of, by their path.
+ *
+ * Returns: (transfer none) (element-type utf8 GBytes): the files
+ */
+GHashTable *
+ephy_web_extension_get_resources (EphyWebExtension *self)
+{
+  return self->resources;
+}
+
 gconstpointer
 ephy_web_extension_get_resource (EphyWebExtension *self,
                                  const char       *name,

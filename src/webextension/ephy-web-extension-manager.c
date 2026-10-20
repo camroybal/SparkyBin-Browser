@@ -42,6 +42,7 @@
 #include "api/tabs.h"
 #include "api/windows.h"
 #include "ephy-browser-action.h"
+#include "ephy-extension-filters.h"
 #include "ephy-debug.h"
 #include "ephy-embed-prefs.h"
 #include "ephy-embed-shell.h"
@@ -78,6 +79,7 @@ struct _EphyWebExtensionManager {
 
   GHashTable *background_web_views;
   GHashTable *popup_web_views;
+  GHashTable *extension_filters; /* EphyWebExtension * -> EphyExtensionFilters * */
 
   GHashTable *pending_messages;
 };
@@ -272,6 +274,98 @@ tell_extension_it_is_installed (EphyWebExtensionManager *self,
                                                        "{\"reason\": \"install\"}");
 }
 
+/*
+ * The filter lists that come with an extension.
+ *
+ * An ad blocker has lists of the things it stops, and they are in the
+ * extension itself. The browser can use them: it compiles them into the
+ * rules that WebKit's content blockers understand, and puts them on the
+ * pages. A request that matches one of them does not happen.
+ *
+ * This is how Safari's uBlock Origin works. There is no way for the
+ * extension to stop a request by itself, because WebKit does not let
+ * anything cancel a request once it has started.
+ */
+
+/* Where the lists are looked for. An extension that has them in one of
+ * these places has them used. */
+static const char * const filter_list_places[] = {
+  "assets/ublock/",
+  "assets/filters/",
+};
+
+static void
+compile_extension_filter_lists (EphyWebExtensionManager *self,
+                                EphyWebExtension        *web_extension)
+{
+  g_autoptr (EphyExtensionFilters) filters = NULL;
+  GHashTableIter iter;
+  gpointer key;
+  gpointer value;
+  gboolean found = FALSE;
+
+  if (!g_hash_table_contains (self->extension_filters, web_extension)) {
+    filters = ephy_extension_filters_new ();
+    g_hash_table_insert (self->extension_filters, web_extension, g_steal_pointer (&filters));
+  }
+
+  filters = g_hash_table_lookup (self->extension_filters, web_extension);
+
+  g_hash_table_iter_init (&iter, ephy_web_extension_get_resources (web_extension));
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    const char *path = key;
+    g_autofree char *text = NULL;
+    g_autofree char *name = NULL;
+    gsize i;
+
+    for (i = 0; i < G_N_ELEMENTS (filter_list_places); i++) {
+      if (g_str_has_prefix (path, filter_list_places[i]))
+        break;
+    }
+
+    if (i == G_N_ELEMENTS (filter_list_places))
+      continue;
+
+    /* Only the lists of filters, not anything else that is text. */
+    if (!g_str_has_suffix (path, ".txt"))
+      continue;
+
+    text = ephy_web_extension_get_resource_as_string (web_extension, path);
+    if (!text)
+      continue;
+
+    name = g_strdup (path);
+    g_strdelimit (name, "/.", '_');
+
+    LOG ("The extension %s has a filter list: %s", ephy_web_extension_get_name (web_extension), path);
+
+    ephy_extension_filters_add (filters, name, text, strlen (text));
+    found = TRUE;
+  }
+
+  if (!found)
+    g_hash_table_remove (self->extension_filters, web_extension);
+}
+
+/**
+ * ephy_web_extension_manager_apply_filters:
+ * @self: the manager
+ * @view: the page
+ *
+ * Puts the rules of the extensions on a page.
+ */
+void
+ephy_web_extension_manager_apply_filters (EphyWebExtensionManager *self,
+                                           WebKitWebView           *view)
+{
+  GHashTableIter iter;
+  gpointer value;
+
+  g_hash_table_iter_init (&iter, self->extension_filters);
+  while (g_hash_table_iter_next (&iter, NULL, &value))
+    ephy_extension_filters_apply (EPHY_EXTENSION_FILTERS (value), view);
+}
+
 static void
 on_web_extension_loaded (GObject      *source_object,
                          GAsyncResult *result,
@@ -295,6 +389,7 @@ on_web_extension_loaded (GObject      *source_object,
     LOG ("Activating %s", ephy_web_extension_get_name (web_extension));
     ephy_web_extension_manager_set_active (self, web_extension, TRUE);
     tell_extension_it_is_installed (self, web_extension);
+    compile_extension_filter_lists (self, web_extension);
   } else {
     LOG ("%s is installed but not active", ephy_web_extension_get_name (web_extension));
   }
@@ -495,6 +590,7 @@ ephy_web_extension_manager_constructed (GObject *object)
   self->browser_action_map = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify)g_object_unref);
   self->browser_actions = g_list_store_new (EPHY_TYPE_BROWSER_ACTION);
   self->pending_messages = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)g_hash_table_destroy);
+  self->extension_filters = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)g_object_unref);
   self->web_extensions = g_ptr_array_new_full (0, g_object_unref);
   self->user_agent_overrides = create_user_agent_overrides ();
 
@@ -514,6 +610,7 @@ ephy_web_extension_manager_dispose (GObject *object)
 
   g_list_store_remove_all (self->browser_actions);
 
+  g_clear_pointer (&self->extension_filters, g_hash_table_destroy);
   g_clear_pointer (&self->background_web_views, g_hash_table_destroy);
   g_clear_pointer (&self->popup_web_views, g_hash_table_destroy);
   g_clear_object (&self->browser_actions);

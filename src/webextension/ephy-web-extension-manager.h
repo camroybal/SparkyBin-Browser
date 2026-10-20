@@ -64,6 +64,9 @@ void                    ephy_web_extension_manager_set_active                   
                                                                                      EphyWebExtension        *web_extension,
                                                                                      gboolean                 active);
 
+void                    ephy_web_extension_manager_apply_filters                   (EphyWebExtensionManager *self,
+                                                                                     WebKitWebView           *view);
+
 void                    ephy_web_extension_manager_show_browser_action              (EphyWebExtensionManager *self,
                                                                                      EphyWebExtension        *web_extension);
 
