@@ -408,7 +408,15 @@ content_script_window_object_cleared_cb (WebKitScriptWorld *world,
   js_context = webkit_frame_get_js_context_for_script_world (frame, world);
 
   js_browser = jsc_context_get_value (js_context, "browser");
-  g_assert (!jsc_value_is_object (js_browser));
+
+  /* The API is installed once per document. If it is somehow already there,
+   * installing it again would be wrong, so leave it alone. This used to be
+   * an assertion, and the renderer turns a failed assertion into a web
+   * process abort, which would take every tab in the process with it. */
+  if (jsc_value_is_object (js_browser)) {
+    g_warning ("The extension API is already installed in %s, not installing it again", guid);
+    return;
+  }
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/webextensions-common.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
   if (bytes) {
@@ -425,7 +433,6 @@ content_script_window_object_cleared_cb (WebKitScriptWorld *world,
                                          extension_data->translations,
                                          extension_data->manifest);
 }
-
 static void
 web_extension_data_free (WebExtensionData *data)
 {
@@ -1011,7 +1018,15 @@ default_script_world_window_object_cleared_cb (WebKitScriptWorld       *world,
   }
 
   js_browser = jsc_context_get_value (js_context, "browser");
-  g_assert (!jsc_value_is_object (js_browser));
+
+  /* The API is installed once per document. If it is somehow already there,
+   * installing it again would be wrong, so leave it alone. This used to be
+   * an assertion, and the renderer turns a failed assertion into a web
+   * process abort, which would take every tab in the process with it. */
+  if (jsc_value_is_object (js_browser)) {
+    g_warning ("The extension API is already installed in %s, not installing it again", guid);
+    return;
+  }
 
   bytes = g_resources_lookup_data ("/com/sparkybin/browser-web-process-extension/js/webextensions-common.js", G_RESOURCE_LOOKUP_FLAGS_NONE, NULL);
   if (bytes) {

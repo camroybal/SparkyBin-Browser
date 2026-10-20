@@ -63,7 +63,7 @@ In rough order of how much is likely to be worth it.
 
 ### 1. The renderer asserts, and an assert there kills every tab
 
-`embed/web-process-extension/ephy-web-process-extension.c:411`:
+`embed/web-process-extension/ephy-web-process-extension.c`:
 
 ```c
 js_browser = jsc_context_get_value (js_context, "browser");
@@ -76,9 +76,8 @@ assertion is there to catch a double installation of the extension API, but
 `window-object-cleared` is emitted once per document, so it holds today by
 luck rather than by design.
 
-A guard that logs and returns is four lines and removes a class of
-whole-browser death. This is a stability fix first and a performance fix
-never.
+**This one is done.** Both of the places that had it now warn and return
+instead, so a double installation costs a warning rather than the process.
 
 ### 2. The extension API is installed per frame, per extension
 
