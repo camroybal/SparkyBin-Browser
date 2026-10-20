@@ -367,9 +367,27 @@ HTTPS with a certificate GitHub issued for the domain.
       `emit_in_tab_with_reply()` can hang on a destroyed view.
       **`browser.webRequest` is the one that cannot be fixed here.** It is
       how an ad blocker says no to a request, and WebKit does not let
-      anything cancel a single request, so no ad blocker can work in the
-      browser today. The browser's own filtering does work, and is
-      separate.
+      anything cancel a single request. The browser's own filtering does
+      work, and is separate.
+
+      But there is another way, and it is the one Safari uses. A content
+      blocker stops requests by rule rather than by decision, and WebKit
+      has that. The browser now compiles the filter lists that come with
+      an extension into the rules a content blocker takes, and puts them
+      on the pages, so the list an ad blocker ships with is used. The
+      whole of uBlock Origin's list goes through it and comes out as a
+      list WebKit takes. `docs/requests.md` has the detail.
+- [x] **Requests can be stopped, by rule.** The filter lists that come
+      with an extension are compiled into the rules that WebKit's content
+      blockers understand, and put on the pages. This is how Safari's
+      uBlock Origin works, and it is the only way an extension's rules
+      can be used, because WebKit does not let an extension cancel a
+      request. `docs/requests.md` has the detail.
+- [ ] `browser.declarativeNetRequest`. The translation for it is written
+      and tested, but the API is not there yet.
+- [ ] `browser.webRequest` for watching and rewriting. The rules for it
+      are not written yet. Rewriting is possible: a request can be
+      pointed somewhere else.
 - [x] **Colours and a browser that a theme cannot break.** The browser had
       no styles of its own at all, so a theme was free to decide that a
       button is twenty pixels tall or that a header bar has no height, and
