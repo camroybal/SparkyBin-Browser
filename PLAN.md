@@ -307,9 +307,12 @@ quietly.
 - [x] Decide the application ID. See 2.4. It is `com.sparkybin.Browser`.
 - [x] Cut the tag. v0.1 is published at
       <https://github.com/camroybal/SparkyBin-Browser/releases/tag/v0.1>.
-- [ ] Cut the tag for 0.2. The version, the `NEWS` entry and the AppStream
-      `<releases>` block are the three things that have to agree, and the
-      tag has to be on the commit that carries them.
+- [x] Cut the tag for 0.2. It is published at
+      <https://github.com/camroybal/SparkyBin-Browser/releases/tag/v0.2>,
+      with the flatpak built against the GNOME 51 runtime. The version,
+      the `NEWS` entry and the AppStream `<releases>` block are generated
+      from one another, and `data/generate-release-notes --check` says
+      whether they agree.
 - [ ] Flathub submission. The manifest is ready, and the domain
       verification file is in the site repository waiting for the token
       from the Developer Portal. Flathub also wants a development history,
