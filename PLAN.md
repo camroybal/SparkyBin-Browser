@@ -3,7 +3,7 @@
 Working notes. Not a press release, not a design document. This file exists
 so the to-do list lives in one place instead of in a chat window.
 
-Status as of 2026-10-19.
+Status as of 2026-10-20.
 
 Decisions taken:
 
@@ -35,11 +35,14 @@ What exists:
 
 What does not exist yet:
 
-- A version of our own. The tree still says `51.1`.
-- Any release. No tags, no GitHub Releases, no `stable` flatpak manifest.
-- A website.
-- A real icon. The one in `data/icons/` is a blue globe with a star and a
-  comment saying so.
+- A version of our own. The tree still says `51.1`. The first release is
+  0.1, and it is published, but the version in the tree has not been
+  changed to it.
+- A second release. v0.1 is out; v0.2 has not been cut.
+- The sidebar as a tab strip. The sidebar has a list of the open tabs in
+  it, but the tab bar is still the tab bar.
+- A cache setting. WebKit's default is the one that uses the most memory,
+  and the user is not offered a choice. See `docs/performance.md`.
 
 ---
 
@@ -284,8 +287,8 @@ quietly.
 - [x] `data/screenshot.png` shows the real interface now, taken by running the
       browser under Xvfb in a container. The two `help/C/media/epiphany-*.png`
       files still show the upstream interface.
-- [ ] The icon is placeholder artwork, in the app, in the help and in the
-      AppStream metadata.
+- [x] The icon is drawn: a compass with a lightning bolt for a needle, in
+      the app, in the help, in the AppStream metadata and on the site.
 - [x] The contact address is gone. There is no email; the issue tracker is
       the way to reach the project, and the metadata says so.
 - [x] The README does not say where the bug tracker is.
@@ -299,11 +302,16 @@ quietly.
       release history moved to `NEWS.upstream`, because a fork's own version
       line does not sort with the versions it forked from, and AppStream
       requires the releases to be in order.
-- [ ] Decide the application ID. See 2.4. This is the one thing on the list
-      that is hard to undo.
-- [ ] Cut the tag, once the application ID is settled.
-- [ ] Flathub submission, when there is an ID that can be verified.
-- [ ] Real icon and screenshots.
+- [x] Decide the application ID. See 2.4. It is `com.sparkybin.Browser`.
+- [x] Cut the tag. v0.1 is published at
+      <https://github.com/camroybal/SparkyBin-Browser/releases/tag/v0.1>.
+- [ ] Flathub submission. The manifest is ready, and the domain
+      verification file is in the site repository waiting for the token
+      from the Developer Portal. Flathub also wants a development history,
+      which takes time to build.
+- [x] Real icon and screenshots. The help screenshots were taken again
+      from the browser itself, because the old ones were GNOME Web from
+      2020.
 
 ### P2 — Website
 
@@ -326,12 +334,15 @@ HTTPS with a certificate GitHub issued for the domain.
 
 ### P3 — Work on the browser itself
 
-- [ ] **The sidebar.** Phase one is built. A panel with a search field and a
-      list of sections, where a section is either the bookmarks bar or a
-      tag, and the sections are the user's to choose and order in a
-      preferences page. The design note is in `docs/sidebar.md`, which also
-      has what is still open: drag and drop for the sections, whether the
-      bar stays a section, and whether it should be open by default.
+- [ ] **The sidebar.** Phase one is built. The sidebar shows either the
+      bookmarks or the open tabs, and a switch at the top of it says
+      which. The bookmarks are in sections, where a section is either the
+      bookmarks bar or a tag, and the sections are the user's to choose and
+      order in a preferences page. The design note is in
+      `docs/sidebar.md`, which also has what is still open: drag and drop
+      for the sections, whether the bar stays a section, whether the
+      sidebar should be open by default, and whether the tab list should
+      become the tab strip rather than a second view of the same tabs.
 - [x] **Performance and stability.** A shortlist and a way to measure are in
       `docs/performance.md`, and `tools/measure.sh` collects the numbers.
       The first item was a stability fix rather than a performance one: an
@@ -341,17 +352,31 @@ HTTPS with a certificate GitHub issued for the domain.
       served without a type, and a tab opened in the first second of a
       window was never reported. All three are fixed and all three are
       broken upstream too.
-- [ ] The last item on the list: an object is unreffed at shutdown that is
-      not an object. It comes from the table of background views taking a
-      pointer to a widget without taking a reference. It is only a warning,
-      and the browser exits cleanly, but it should be fixed.
-- [ ] WebExtension gaps, in rough order of how much they matter:
+- [x] The last item on the list: an object is unreffed at shutdown that is
+      not an object. It was not the table of background views, as the note
+      guessed. The bookmarks manager was freed twice, once by the sidebar
+      and once by the preferences page, neither of which owned it. The
+      browser died on the way out every time. It exits cleanly now.
+- [ ] WebExtension gaps, in rough order of how much they matter. The
+      missing calls and the events that are never sent are listed in
+      `docs/extensions.md`, and the ones thirteen real extensions asked
+      for are in. What is left:
       `storage.onChanged` is missing and `storage` writes block the UI
-      thread; Manifest V3 is unsupported; `emit_in_tab_with_reply()` can hang
-      on a destroyed view; the extension manager is a process-wide singleton
-      whose constructor starts the directory scan, so no extension is known
-      until something asks for the manager, which is usually during the
-      first window's construction
+      thread; Manifest V3 is unsupported, and its service workers are why
+      three of the extensions serve no files at all;
+      `emit_in_tab_with_reply()` can hang on a destroyed view.
+      **`browser.webRequest` is the one that cannot be fixed here.** It is
+      how an ad blocker says no to a request, and WebKit does not let
+      anything cancel a single request, so no ad blocker can work in the
+      browser today. The browser's own filtering does work, and is
+      separate.
+- [x] **Colours and a browser that a theme cannot break.** The browser had
+      no styles of its own at all, so a theme was free to decide that a
+      button is twenty pixels tall or that a header bar has no height, and
+      the browser then looked broken in ways that had nothing to do with the
+      theme being wrong. The browser's own sizes are set now, after the
+      theme. There are also fifteen palettes to pick from, named after the
+      projects they come from, in the preferences page next to the sidebar.
 - [ ] The menus command is carried in an action shared by every extension
 - [ ] The `TODO` file: `g_clear_object` in dispose, named timeout sources,
       `g_autofree` where it fits
