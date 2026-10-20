@@ -120,6 +120,11 @@
 			<summary>Show internal WebKit features in the features preferences page.</summary>
 			<description>Controls whether the features page in the preferences window shows internal WebKit features.</description>
 		</key>
+		<key type="s" name="palette">
+			<default>'system'</default>
+			<summary>The colours the browser uses.</summary>
+			<description>The name of the palette the browser uses. "system" is the colours of the desktop, and anything else is one of the palettes in the preferences.</description>
+		</key>
 		<key type="b" name="sidebar-visible">
 			<default>false</default>
 			<summary>Show the sidebar.</summary>

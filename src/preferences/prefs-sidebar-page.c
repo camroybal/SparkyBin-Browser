@@ -25,61 +25,181 @@
 
 #include "ephy-bookmarks-manager.h"
 #include "ephy-prefs.h"
-#include "ephy-settings.h"
 #include "ephy-shell.h"
-
-#define SECTION_BOOKMARKS "bookmarks"
-
-enum {
-  MANAGE_BOOKMARKS_ROW_ACTIVATED,
-  LAST_SIGNAL
-};
+#include "ephy-settings.h"
+#include "palettes.h"
 
 struct _EphyPrefsSidebarPage {
   AdwPreferencesPage parent_instance;
 
-  GtkWidget *visible_row;
-  GtkWidget *width_row;
+  GtkWidget *palette_group;
   GtkWidget *sections_group;
+  GtkWidget *sections_list;
   GtkWidget *add_row;
-
-  GPtrArray *section_rows;
 
   EphyBookmarksManager *manager;
 };
 
 G_DEFINE_FINAL_TYPE (EphyPrefsSidebarPage, ephy_prefs_sidebar_page, ADW_TYPE_PREFERENCES_PAGE)
 
+enum {
+  MANAGE_BOOKMARKS_ROW_ACTIVATED,
+  LAST_SIGNAL
+};
+
 static guint signals[LAST_SIGNAL];
 
+static void get_sections (EphyPrefsSidebarPage *self, char ***sections);
+static void set_sections (EphyPrefsSidebarPage *self, char **sections);
+static gboolean section_exists (EphyPrefsSidebarPage *self, const char *name);
+static void append_section (EphyPrefsSidebarPage *self, const char *name);
+
+/* Colours */
+
 static void
-get_sections (EphyPrefsSidebarPage *self,
-              char                ***sections)
+on_palette_selected (AdwActionRow *row,
+                     gpointer    user_data)
 {
-  g_autoptr (GVariant) value = NULL;
-  GVariantIter iter;
-  const char *name;
-  GPtrArray *result;
+  const char *slug = g_object_get_data (G_OBJECT (row), "palette");
 
-  result = g_ptr_array_new_with_free_func (g_free);
-  value = g_settings_get_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_SECTIONS);
-
-  g_variant_iter_init (&iter, value);
-  while (g_variant_iter_next (&iter, "&s", &name))
-    g_ptr_array_add (result, g_strdup (name));
-
-  *sections = (char **) g_ptr_array_free (result, FALSE);
+  g_settings_set_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_PALETTE, slug);
 }
 
 static void
-set_sections (EphyPrefsSidebarPage *self,
-              char                **sections)
+swatch_snapshot (GtkWidget    *widget,
+                 GtkSnapshot  *snapshot)
 {
-  g_autoptr (GVariant) value = NULL;
+  const char *colour = g_object_get_data (G_OBJECT (widget), "colour");
+  GtkAllocation allocation;
+  GdkRGBA rgba;
+  graphene_rect_t bounds;
+  GskRoundedRect outline;
+  graphene_size_t corner = GRAPHENE_SIZE_INIT (6, 6);
+  float widths[4] = { 1.0, 1.0, 1.0, 1.0 };
+  GdkRGBA borders[4];
 
-  value = g_variant_new ("as", sections, g_strv_length (sections));
-  g_settings_set_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_SECTIONS, value);
+  if (!colour || !gdk_rgba_parse (&rgba, colour))
+    return;
+
+  allocation.width = gtk_widget_get_width (widget);
+  allocation.height = gtk_widget_get_height (widget);
+  graphene_rect_init (&bounds, 0, 0, allocation.width, allocation.height);
+  gtk_snapshot_append_color (snapshot, &rgba, &bounds);
+
+  gsk_rounded_rect_init (&outline, &bounds, &corner, &corner, &corner, &corner);
+  borders[0] = rgba;
+  borders[1] = rgba;
+  borders[2] = rgba;
+  borders[3] = rgba;
+  gtk_snapshot_append_border (snapshot, &outline, widths, borders);
 }
+
+static GtkWidget *
+create_swatch (const char *colour)
+{
+  GtkWidget *drawing;
+
+  drawing = g_object_new (GTK_TYPE_DRAWING_AREA, NULL);
+  gtk_widget_set_size_request (drawing, 20, 20);
+  gtk_widget_add_css_class (drawing, "palette-swatch");
+  g_object_set_data_full (G_OBJECT (drawing), "colour", g_strdup (colour), g_free);
+  g_signal_connect (drawing, "snapshot", G_CALLBACK (swatch_snapshot), NULL);
+
+  return drawing;
+}
+
+static GtkWidget *
+create_palette_row (EphyPalette *palette)
+{
+  GtkWidget *row;
+  GtkWidget *box;
+  GtkWidget *swatches;
+  const char *colours[3];
+
+  row = adw_action_row_new ();
+  adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), palette->name);
+
+  swatches = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
+  gtk_widget_set_valign (swatches, GTK_ALIGN_CENTER);
+  gtk_widget_add_css_class (swatches, "palette-swatches");
+
+  if (palette->bg) {
+    colours[0] = palette->bg;
+    colours[1] = palette->fg;
+    colours[2] = palette->accent;
+  } else {
+    /* The desktop's own colours, which are not known here. */
+    colours[0] = "#fafafb";
+    colours[1] = "#2e3436";
+    colours[2] = "#3584e4";
+  }
+
+  for (int i = 0; i < 3; i++)
+    gtk_box_append (GTK_BOX (swatches), create_swatch (colours[i]));
+
+  box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+  gtk_widget_set_valign (box, GTK_ALIGN_CENTER);
+  gtk_box_append (GTK_BOX (box), swatches);
+
+  adw_action_row_add_suffix (ADW_ACTION_ROW (row), box);
+
+  g_object_set_data_full (G_OBJECT (row), "palette", g_strdup (palette->slug), g_free);
+  g_signal_connect (row, "activated", G_CALLBACK (on_palette_selected), NULL);
+
+  return row;
+}
+
+static void
+update_palette_selection (EphyPrefsSidebarPage *self)
+{
+  g_autofree char *current = NULL;
+  GtkWidget *child;
+
+  current = g_settings_get_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_PALETTE);
+
+  for (child = gtk_widget_get_first_child (self->palette_group); child;
+       child = gtk_widget_get_next_sibling (child)) {
+    const char *slug = g_object_get_data (G_OBJECT (child), "palette");
+
+    if (!slug)
+      continue;
+
+    if (g_strcmp0 (slug, current) == 0)
+      gtk_widget_add_css_class (child, "palette-selected");
+    else
+      gtk_widget_remove_css_class (child, "palette-selected");
+  }
+}
+
+static void
+on_palette_changed (GSettings   *settings,
+                     const char *key,
+                     gpointer   user_data)
+{
+  EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
+
+  update_palette_selection (self);
+}
+
+static void
+build_palette_group (EphyPrefsSidebarPage *self)
+{
+  g_autoptr (GPtrArray) palettes = NULL;
+  guint i;
+
+  palettes = ephy_palette_get_all ();
+
+  for (i = 0; i < palettes->len; i++) {
+    EphyPalette *palette = g_ptr_array_index (palettes, i);
+
+    adw_preferences_group_add (ADW_PREFERENCES_GROUP (self->palette_group),
+                               create_palette_row (palette));
+  }
+
+  update_palette_selection (self);
+}
+
+/* Sections */
 
 static gboolean
 section_exists (EphyPrefsSidebarPage *self,
@@ -116,6 +236,35 @@ append_section (EphyPrefsSidebarPage *self,
   sections[count + 1] = NULL;
 
   set_sections (self, sections);
+}
+
+static void
+get_sections (EphyPrefsSidebarPage *self,
+              char                ***sections)
+{
+  g_autoptr (GVariant) value = NULL;
+  GVariantIter iter;
+  const char *name;
+  GPtrArray *result;
+
+  result = g_ptr_array_new_with_free_func (g_free);
+  value = g_settings_get_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_SECTIONS);
+
+  g_variant_iter_init (&iter, value);
+  while (g_variant_iter_next (&iter, "&s", &name))
+    g_ptr_array_add (result, g_strdup (name));
+
+  *sections = (char **) g_ptr_array_free (result, FALSE);
+}
+
+static void
+set_sections (EphyPrefsSidebarPage *self,
+              char                **sections)
+{
+  g_autoptr (GVariant) value = NULL;
+
+  value = g_variant_new ("as", sections, g_strv_length (sections));
+  g_settings_set_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_SECTIONS, value);
 }
 
 static void
@@ -216,65 +365,19 @@ create_icon_button (const char           *icon_name,
   return button;
 }
 
-static const char *
-section_title (const char *name)
-{
-  if (g_strcmp0 (name, SECTION_BOOKMARKS) == 0)
-    return _("Bookmarks bar");
-
-  return name;
-}
-
-static int
-count_bookmarks_in_section (EphyPrefsSidebarPage *self,
-                            const char           *name)
-{
-  GSequence *bookmarks;
-  int count;
-
-  if (g_strcmp0 (name, SECTION_BOOKMARKS) == 0) {
-    GSequence *order = ephy_bookmarks_manager_get_bookmarks_order (self->manager);
-    GSequenceIter *iter;
-    int bookmarks_count = 0;
-
-    for (iter = g_sequence_get_begin_iter (order);
-         !g_sequence_iter_is_end (iter);
-         iter = g_sequence_iter_next (iter)) {
-      GVariant *variant = g_sequence_get (iter);
-      const char *type;
-      const char *item;
-      int index;
-
-      g_variant_get (variant, "(ssi)", &type, &item, &index);
-      if (g_strcmp0 (type, "bookmark") == 0)
-        bookmarks_count++;
-    }
-
-    return bookmarks_count;
-  }
-
-  bookmarks = ephy_bookmarks_manager_get_bookmarks_with_tag (self->manager, name);
-  count = (int) g_sequence_get_length (bookmarks);
-  g_sequence_free (bookmarks);
-
-  return count;
-}
-
 static void
 rebuild_sections (EphyPrefsSidebarPage *self)
 {
   g_autofree char **sections = NULL;
-  guint i;
+  GtkWidget *child;
   int count;
   int index;
 
-  /* The rows are ours, so they are removed by hand. The group's first
-   * child is its own layout, not one of ours. */
-  for (i = 0; i < self->section_rows->len; i++) {
-    adw_preferences_group_remove (ADW_PREFERENCES_GROUP (self->sections_group),
-                                  g_ptr_array_index (self->section_rows, i));
+  while ((child = gtk_widget_get_first_child (self->sections_group)) != NULL) {
+    if (child == self->add_row)
+      break;
+    adw_preferences_group_remove (ADW_PREFERENCES_GROUP (self->sections_group), child);
   }
-  g_ptr_array_set_size (self->section_rows, 0);
 
   get_sections (self, &sections);
   count = g_strv_length (sections);
@@ -284,17 +387,10 @@ rebuild_sections (EphyPrefsSidebarPage *self)
     GtkWidget *up;
     GtkWidget *down;
     GtkWidget *remove;
-    g_autofree char *subtitle = NULL;
-    int bookmarks_count;
     GtkWidget *row;
 
     row = adw_action_row_new ();
-    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), section_title (sections[index]));
-
-    bookmarks_count = count_bookmarks_in_section (self, sections[index]);
-    subtitle = g_strdup_printf (ngettext ("%d bookmark", "%d bookmarks", bookmarks_count),
-                                 bookmarks_count);
-    adw_action_row_set_subtitle (ADW_ACTION_ROW (row), subtitle);
+    adw_preferences_row_set_title (ADW_PREFERENCES_ROW (row), sections[index]);
 
     actions = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_add_css_class (actions, "linked");
@@ -313,7 +409,6 @@ rebuild_sections (EphyPrefsSidebarPage *self)
     adw_action_row_add_suffix (ADW_ACTION_ROW (row), actions);
 
     adw_preferences_group_add (ADW_PREFERENCES_GROUP (self->sections_group), row);
-    g_ptr_array_add (self->section_rows, row);
   }
 }
 
@@ -325,47 +420,57 @@ on_tag_row_activated (GtkListBoxRow *row,
   const char *name = g_object_get_data (G_OBJECT (row), "section-name");
 
   append_section (self, name);
-  gtk_popover_popdown (GTK_POPOVER (gtk_widget_get_parent (GTK_WIDGET (row))));
 }
 
 static void
 on_new_section_activated (GtkEntry *entry,
-                          gpointer  user_data)
+                           gpointer  user_data)
 {
   EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
-  const char *text = gtk_editable_get_text (GTK_EDITABLE (entry));
   g_autofree char *name = NULL;
 
-  name = g_strstrip (g_strdup (text));
+  name = g_strstrip (g_strdup (gtk_editable_get_text (GTK_EDITABLE (entry))));
 
   if (*name == '\0')
     return;
 
-  /* A section that is not a tag yet becomes one, so that it can be given
-   * bookmarks. */
+  /* A section that is not a tag yet becomes one, so that it has somewhere
+   * to put bookmarks. */
   if (!ephy_bookmarks_manager_tag_exists (self->manager, name))
     ephy_bookmarks_manager_create_tag (self->manager, name);
 
   append_section (self, name);
+
+  gtk_editable_set_text (GTK_EDITABLE (entry), "");
+}
+
+static void
+on_manage_row_activated (AdwActionRow *row,
+                          gpointer     user_data)
+{
+  EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
+
+  g_signal_emit (self, signals[MANAGE_BOOKMARKS_ROW_ACTIVATED], 0);
 }
 
 static void
 on_add_row_activated (AdwActionRow *row,
-                      gpointer     user_data)
+                       gpointer     user_data)
 {
   EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
+  GtkWidget *popover;
+  GtkWidget *box;
+  GtkWidget *entry;
+  GtkWidget *list_box;
   GSequence *tags;
   GSequenceIter *iter;
 
-  /* The popover is created once and filled in each time, so that it does
-   * not have to be built again. */
-  GtkWidget *popover = g_object_get_data (G_OBJECT (self), "popover");
-  GtkWidget *list_box = g_object_get_data (G_OBJECT (self), "popover-list");
-  GtkWidget *entry = g_object_get_data (G_OBJECT (self), "popover-entry");
-  GtkWidget *child;
+  popover = g_object_get_data (G_OBJECT (self), "popover");
+  list_box = g_object_get_data (G_OBJECT (self), "popover-list");
+  entry = g_object_get_data (G_OBJECT (self), "popover-entry");
 
-  while ((child = gtk_widget_get_first_child (list_box)) != NULL)
-    gtk_widget_unparent (child);
+  while ((box = gtk_widget_get_first_child (list_box)) != NULL)
+    gtk_widget_unparent (box);
 
   tags = ephy_bookmarks_manager_get_tags (self->manager);
 
@@ -386,35 +491,7 @@ on_add_row_activated (AdwActionRow *row,
   }
 
   gtk_editable_set_text (GTK_EDITABLE (entry), "");
-
   gtk_popover_popup (GTK_POPOVER (popover));
-}
-
-static void
-on_sections_changed (GSettings   *settings,
-                     const char *key,
-                     gpointer   user_data)
-{
-  EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
-
-  rebuild_sections (self);
-}
-
-static void
-on_manage_row_activated (AdwActionRow *row,
-                         gpointer     user_data)
-{
-  EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (user_data);
-
-  g_signal_emit (self, signals[MANAGE_BOOKMARKS_ROW_ACTIVATED], 0);
-}
-
-static void
-on_width_changed (AdwSpinRow *row,
-                  gpointer   user_data)
-{
-  g_settings_set_int (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_WIDTH,
-                      (int) adw_spin_row_get_value (row));
 }
 
 static void
@@ -422,7 +499,6 @@ ephy_prefs_sidebar_page_dispose (GObject *object)
 {
   EphyPrefsSidebarPage *self = EPHY_PREFS_SIDEBAR_PAGE (object);
 
-  g_clear_pointer (&self->section_rows, g_ptr_array_unref);
   g_clear_object (&self->manager);
 
   G_OBJECT_CLASS (ephy_prefs_sidebar_page_parent_class)->dispose (object);
@@ -439,8 +515,7 @@ ephy_prefs_sidebar_page_class_init (EphyPrefsSidebarPageClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/com/sparkybin/browser/gtk/prefs-sidebar-page.ui");
 
-  gtk_widget_class_bind_template_child (widget_class, EphyPrefsSidebarPage, visible_row);
-  gtk_widget_class_bind_template_child (widget_class, EphyPrefsSidebarPage, width_row);
+  gtk_widget_class_bind_template_child (widget_class, EphyPrefsSidebarPage, palette_group);
   gtk_widget_class_bind_template_child (widget_class, EphyPrefsSidebarPage, sections_group);
   gtk_widget_class_bind_template_child (widget_class, EphyPrefsSidebarPage, add_row);
 
@@ -458,58 +533,52 @@ ephy_prefs_sidebar_page_class_init (EphyPrefsSidebarPageClass *klass)
 static void
 ephy_prefs_sidebar_page_init (EphyPrefsSidebarPage *self)
 {
-  g_autoptr (GVariant) width = NULL;
   GtkWidget *popover;
-  GtkWidget *popover_box;
+  GtkWidget *box;
   GtkWidget *entry;
   GtkWidget *list_box;
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
   self->manager = ephy_shell_get_bookmarks_manager (ephy_shell_get_default ());
-  self->section_rows = g_ptr_array_new ();
 
-  g_settings_bind (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_VISIBLE,
-                   self->visible_row, "active", G_SETTINGS_BIND_DEFAULT);
+  build_palette_group (self);
+  rebuild_sections (self);
 
-  width = g_settings_get_value (EPHY_SETTINGS_UI, EPHY_PREFS_UI_SIDEBAR_WIDTH);
-  adw_spin_row_set_value (ADW_SPIN_ROW (self->width_row), g_variant_get_int32 (width));
-  g_signal_connect (self->width_row, "notify::value", G_CALLBACK (on_width_changed), self);
+  g_signal_connect (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_PALETTE,
+                    G_CALLBACK (on_palette_changed), self);
 
   /* The popover for adding a section. */
   popover = gtk_popover_new ();
-  popover_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-  gtk_widget_set_margin_top (popover_box, 6);
-  gtk_widget_set_margin_bottom (popover_box, 6);
-  gtk_widget_set_margin_start (popover_box, 6);
-  gtk_widget_set_margin_end (popover_box, 6);
+  gtk_popover_set_has_arrow (GTK_POPOVER (popover), FALSE);
+
+  box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+  gtk_widget_set_margin_top (box, 6);
+  gtk_widget_set_margin_bottom (box, 6);
+  gtk_widget_set_margin_start (box, 6);
+  gtk_widget_set_margin_end (box, 6);
 
   entry = gtk_entry_new ();
   gtk_entry_set_placeholder_text (GTK_ENTRY (entry), _("New section"));
   g_signal_connect (entry, "activate", G_CALLBACK (on_new_section_activated), self);
-  gtk_box_append (GTK_BOX (popover_box), entry);
+  gtk_box_append (GTK_BOX (box), entry);
 
   list_box = gtk_list_box_new ();
   gtk_list_box_set_selection_mode (GTK_LIST_BOX (list_box), GTK_SELECTION_NONE);
-  gtk_box_append (GTK_BOX (popover_box), list_box);
+  gtk_box_append (GTK_BOX (box), list_box);
 
-  gtk_popover_set_child (GTK_POPOVER (popover), popover_box);
+  gtk_popover_set_child (GTK_POPOVER (popover), box);
   gtk_widget_set_parent (popover, self->add_row);
 
   g_object_set_data (G_OBJECT (self), "popover", popover);
   g_object_set_data (G_OBJECT (self), "popover-list", list_box);
   g_object_set_data (G_OBJECT (self), "popover-entry", entry);
-
-  g_signal_connect (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_SIDEBAR_SECTIONS,
-                    G_CALLBACK (on_sections_changed), self);
-
-  rebuild_sections (self);
 }
 
 /**
  * ephy_prefs_sidebar_page_new:
  *
- * Creates the preferences page for the sidebar.
+ * Creates the preferences page for the sidebar and the colours.
  *
  * Returns: (transfer full): the new page
  */

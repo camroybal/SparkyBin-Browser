@@ -61,6 +61,7 @@ typedef enum
 #define EPHY_PREFS_UI_BOTTOM_URL_BAR             "bottom-url-bar"
 #define EPHY_PREFS_UI_WEBKIT_FEATURES_PANEL      "webkit-features-page"
 #define EPHY_PREFS_UI_WEBKIT_INTERNAL_FEATURES   "webkit-features-page-show-internal"
+#define EPHY_PREFS_UI_PALETTE                    "palette"
 #define EPHY_PREFS_UI_SIDEBAR_VISIBLE            "sidebar-visible"
 #define EPHY_PREFS_UI_SIDEBAR_WIDTH              "sidebar-width"
 #define EPHY_PREFS_UI_SIDEBAR_SECTIONS           "sidebar-sections"

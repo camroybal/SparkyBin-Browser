@@ -46,6 +46,7 @@
 #include "ephy-title-box.h"
 #include "ephy-title-widget.h"
 #include "ephy-type-builtins.h"
+#include "palettes.h"
 #include "ephy-web-app-utils.h"
 #include "ephy-web-view.h"
 #include "ephy-window.h"
@@ -80,9 +81,8 @@ struct _EphyShell {
   gboolean checking_modified_forms;
   int num_windows_with_modified_forms;
 
-#if USE_GRANITE
-  GtkStyleProvider *style_provider;
-#endif
+  GtkCssProvider *style_provider;
+  GtkCssProvider *palette_provider;
 
   GList *windows; /* unowned, used for assertion only */
 };
@@ -565,6 +565,72 @@ run_in_background_set_mapping (const GValue       *value,
 }
 
 static void
+load_palette (EphyShell *shell)
+{
+  g_autofree char *slug = NULL;
+  g_autoptr (EphyPalette) palette = NULL;
+  g_autofree char *css = NULL;
+  GtkStyleProvider *provider;
+
+  g_clear_object (&shell->palette_provider);
+
+  slug = g_settings_get_string (EPHY_SETTINGS_UI, EPHY_PREFS_UI_PALETTE);
+  if (!slug || !*slug || g_strcmp0 (slug, "system") == 0)
+    return;
+
+  palette = ephy_palette_find (slug);
+  if (!palette)
+    return;
+
+  css = ephy_palette_to_css (palette);
+  if (!css || !*css)
+    return;
+
+  provider = GTK_STYLE_PROVIDER (gtk_css_provider_new ());
+  gtk_css_provider_load_from_string (GTK_CSS_PROVIDER (provider), css);
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+                                              provider,
+                                              GTK_STYLE_PROVIDER_PRIORITY_USER);
+  shell->palette_provider = GTK_CSS_PROVIDER (provider);
+}
+
+static void
+on_palette_changed (GSettings   *settings,
+                    const char *key,
+                    gpointer   user_data)
+{
+  EphyShell *shell = EPHY_SHELL (user_data);
+
+  load_palette (shell);
+}
+
+/*
+ * The browser's own styles, and the colours of the palette that was picked.
+ *
+ * Both are loaded at the user priority, which is above the theme, so that a
+ * theme cannot squash the browser and a palette can replace the colours.
+ * The styles only set sizes, so a theme that is otherwise fine still looks
+ * fine.
+ */
+static void
+ephy_shell_setup_styles (EphyShell *shell)
+{
+  GtkStyleProvider *provider;
+
+  provider = GTK_STYLE_PROVIDER (gtk_css_provider_new ());
+  gtk_css_provider_load_from_resource (GTK_CSS_PROVIDER (provider), "/com/sparkybin/Browser/style.css");
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+                                              provider,
+                                              GTK_STYLE_PROVIDER_PRIORITY_USER);
+  shell->style_provider = GTK_CSS_PROVIDER (provider);
+
+  load_palette (shell);
+
+  g_signal_connect (EPHY_SETTINGS_UI, "changed::" EPHY_PREFS_UI_PALETTE,
+                    G_CALLBACK (on_palette_changed), shell);
+}
+
+static void
 ephy_shell_startup (GApplication *application)
 {
   EphyEmbedShell *embed_shell = EPHY_EMBED_SHELL (application);
@@ -601,7 +667,7 @@ ephy_shell_startup (GApplication *application)
                     NULL);
     }
 
-    shell->style_provider = GTK_STYLE_PROVIDER (gtk_css_provider_new ());
+    shell->style_provider = GTK_CSS_PROVIDER (gtk_css_provider_new ());
     gtk_css_provider_load_from_resource (GTK_CSS_PROVIDER (shell->style_provider),
                                          "/com/sparkybin/Browser/style-elementary.css");
 
@@ -612,6 +678,8 @@ ephy_shell_startup (GApplication *application)
 #endif
 
   /* We're not remoting; start our services */
+
+  ephy_shell_setup_styles (shell);
 
   mode = ephy_embed_shell_get_mode (embed_shell);
   if (mode != EPHY_EMBED_SHELL_MODE_APPLICATION) {

@@ -2,27 +2,11 @@ using Gtk 4.0;
 using Adw 1;
 
 template $EphyPrefsSidebarPage: Adw.PreferencesPage {
-  icon-name: "sidebar-show-symbolic";
+  title: _("Sidebar");
 
-  Adw.PreferencesGroup {
-    title: _("Sidebar");
-
-    Adw.SwitchRow visible_row {
-      title: _("Show Sidebar");
-      subtitle: _("Open the sidebar next to the web view.");
-    }
-
-    Adw.SpinRow width_row {
-      title: _("Width");
-      subtitle: _("The width the sidebar opens at, in pixels.");
-      adjustment: Gtk.Adjustment {
-        lower: 180;
-        upper: 600;
-        step-increment: 10;
-        page-increment: 50;
-        value: 300;
-      };
-    }
+  Adw.PreferencesGroup palette_group {
+    title: _("Colours");
+    description: _("The colours the browser uses. The desktop's own colours are the default, and a theme can still change them.");
   }
 
   Adw.PreferencesGroup sections_group {

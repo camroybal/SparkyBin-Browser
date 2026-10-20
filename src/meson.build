@@ -70,6 +70,7 @@ libephymain_sources = [
   'preferences/prefs-search-engine-page.c',
   'preferences/prefs-sidebar-page.c',
   'preferences/webapp-additional-urls-dialog.c',
+  'palettes.c',
   'sidebar/ephy-sidebar-panel.c',
   'synced-tabs-dialog.c',
   'window-commands.c',
