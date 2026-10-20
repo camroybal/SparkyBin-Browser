@@ -334,8 +334,9 @@ HTTPS with a certificate GitHub issued for the domain.
 - [x] A product list in `src/lib/products.ts`, so a second project under the
       SparkyBin name has somewhere to appear. The site is the browser's for
       now, and it moves under a slug when there is a second one.
-- [ ] Point the domain at the site rather than the GitHub Pages URL, so
-      there is one address for the project.
+- [x] The domain serves the site. <https://sparkybin.com> is the address
+      the project is reached at, over HTTPS, and the tree never pointed at
+      the GitHub Pages URL in the first place.
 
 ### P3 — Work on the browser itself
 
