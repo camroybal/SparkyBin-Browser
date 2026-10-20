@@ -246,6 +246,40 @@ resource_types_except (GPtrArray *excluded)
   return types;
 }
 
+/**
+ * resource_types_minus:
+ * @allowed: the types the rule applies to
+ * @excluded: the types it does not apply to
+ *
+ * The types a rule applies to when it names some and then says that some
+ * of those are left out.
+ *
+ * Returns: (transfer full) (element-type utf8): the types
+ */
+static GPtrArray *
+resource_types_minus (GPtrArray *allowed,
+                      GPtrArray *excluded)
+{
+  GPtrArray *types = g_ptr_array_new_with_free_func (g_free);
+
+  for (guint i = 0; allowed && i < allowed->len; i++) {
+    const char *type = g_ptr_array_index (allowed, i);
+    gboolean found = FALSE;
+
+    for (guint j = 0; excluded && j < excluded->len; j++) {
+      if (g_strcmp0 (g_ptr_array_index (excluded, j), type) == 0) {
+        found = TRUE;
+        break;
+      }
+    }
+
+    if (!found)
+      g_ptr_array_add (types, g_strdup (type));
+  }
+
+  return types;
+}
+
 static GPtrArray *
 split_list (const char *value)
 {
@@ -438,15 +472,23 @@ make_rule (const char    *pattern,
   if (case_sensitive)
     g_string_append (rule, ",\"url-filter-is-case-sensitive\":true");
 
-  if (excluded_types && excluded_types->len > 0) {
+  if (resource_types && resource_types->len > 0) {
+    if (excluded_types && excluded_types->len > 0) {
+      GPtrArray *types = resource_types_minus (resource_types, excluded_types);
+
+      g_string_append (rule, ",\"resource-type\":");
+      append_json_array (rule, types);
+      g_ptr_array_unref (types);
+    } else {
+      g_string_append (rule, ",\"resource-type\":");
+      append_json_array (rule, resource_types);
+    }
+  } else if (excluded_types && excluded_types->len > 0) {
     GPtrArray *types = resource_types_except (excluded_types);
 
     g_string_append (rule, ",\"resource-type\":");
     append_json_array (rule, types);
     g_ptr_array_unref (types);
-  } else if (resource_types && resource_types->len > 0) {
-    g_string_append (rule, ",\"resource-type\":");
-    append_json_array (rule, resource_types);
   }
 
   if (domains && domains->len > 0) {
@@ -657,18 +699,12 @@ parse_abp_options (const char *options,
       const char *type = resource_type_for (option);
 
       if (type) {
-        GPtrArray *types = *resource_types ? *resource_types : g_ptr_array_new_with_free_func (g_free);
+        GPtrArray **target = excluded ? excluded_types : resource_types;
 
-        if (excluded) {
-          if (!*excluded_types)
-            *excluded_types = types;
-          else
-            g_ptr_array_unref (types);
-        } else {
-          *resource_types = types;
-        }
+        if (!*target)
+          *target = g_ptr_array_new_with_free_func (g_free);
 
-        g_ptr_array_add (types, g_strdup (type));
+        g_ptr_array_add (*target, g_strdup (type));
         excluded = FALSE;
         continue;
       }

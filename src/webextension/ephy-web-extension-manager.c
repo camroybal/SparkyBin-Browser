@@ -304,13 +304,6 @@ compile_extension_filter_lists (EphyWebExtensionManager *self,
   gpointer value;
   gboolean found = FALSE;
 
-  if (!g_hash_table_contains (self->extension_filters, web_extension)) {
-    filters = ephy_extension_filters_new ();
-    g_hash_table_insert (self->extension_filters, web_extension, g_steal_pointer (&filters));
-  }
-
-  filters = g_hash_table_lookup (self->extension_filters, web_extension);
-
   g_hash_table_iter_init (&iter, ephy_web_extension_get_resources (web_extension));
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     const char *path = key;
@@ -338,6 +331,13 @@ compile_extension_filter_lists (EphyWebExtensionManager *self,
     g_strdelimit (name, "/.", '_');
 
     LOG ("The extension %s has a filter list: %s", ephy_web_extension_get_name (web_extension), path);
+
+    if (!g_hash_table_contains (self->extension_filters, web_extension)) {
+      filters = ephy_extension_filters_new ();
+      g_hash_table_insert (self->extension_filters, web_extension, g_steal_pointer (&filters));
+    }
+
+    filters = g_hash_table_lookup (self->extension_filters, web_extension);
 
     ephy_extension_filters_add (filters, name, text, strlen (text));
     found = TRUE;

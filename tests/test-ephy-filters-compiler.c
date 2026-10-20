@@ -104,6 +104,16 @@ test_excluded_resource_type (void)
 }
 
 static void
+test_a_type_and_an_excluded_type (void)
+{
+  g_autofree char *json = compile ("||example.com^$script,~image\n", NULL, NULL, NULL);
+
+  /* The rule is for scripts, but not for images. */
+  g_assert_nonnull (strstr (json, "\"resource-type\":[\"script\"]"));
+  g_assert_null (strstr (json, "\"image\""));
+}
+
+static void
 test_exception_comes_first (void)
 {
   g_autofree char *json = compile ("||example.com^ads\n@@||example.com^ads\n", NULL, NULL, NULL);
@@ -214,6 +224,7 @@ main (int argc, char **argv)
   g_test_add_func ("/filters/excluded-domain", test_excluded_domain);
   g_test_add_func ("/filters/resource-types", test_resource_types);
   g_test_add_func ("/filters/excluded-resource-type", test_excluded_resource_type);
+  g_test_add_func ("/filters/a-type-and-an-excluded-type", test_a_type_and_an_excluded_type);
   g_test_add_func ("/filters/exception-comes-first", test_exception_comes_first);
   g_test_add_func ("/filters/cosmetic-rules-are-left-out", test_cosmetic_rules_are_left_out);
   g_test_add_func ("/filters/comments-are-left-out", test_comments_are_left_out);

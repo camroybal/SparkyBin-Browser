@@ -72,7 +72,6 @@ static void
 ephy_extension_filters_init (EphyExtensionFilters *self)
 {
   self->filters = g_ptr_array_new_with_free_func ((GDestroyNotify) webkit_user_content_filter_unref);
-  self->store = webkit_user_content_filter_store_new (g_get_tmp_dir ());
 }
 
 /**
@@ -166,7 +165,12 @@ ephy_extension_filters_add (EphyExtensionFilters *self,
   LOG ("The filter list '%s' has %u rules out of %u lines", name, stats.network, stats.total);
 
   /* The rules are kept in a store of their own, so that they do not get in
-   * the way of the lists the browser downloads for itself. */
+   * the way of the lists the browser downloads for itself. The store is
+   * made when it is first needed, because making one looks at what is in
+   * the directory. */
+  if (!self->store)
+    self->store = webkit_user_content_filter_store_new (g_get_tmp_dir ());
+
   identifier = g_strdup_printf ("extension-%s-%u", name, ++self->counter);
 
   bytes = g_bytes_new_take (g_strdup (json), strlen (json));
