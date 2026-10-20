@@ -11,9 +11,10 @@ permissions:
 jobs:
   release:
     name: Flatpak bundle
+    # Not in a container: flatpak-builder uses bubblewrap to sandbox the
+    # build, and a container blocks the nested user namespaces it needs.
+    # The runner is a virtual machine, so it works there.
     runs-on: ubuntu-latest
-    container:
-      image: fedora:42
     env:
       APP_ID: com.sparkybin.Browser
       MANIFEST: com.sparkybin.Browser.json
@@ -25,10 +26,12 @@ jobs:
 
       - name: Install the build tools
         run: |
-          dnf -y install flatpak flatpak-builder gh
-          flatpak remote-add --if-not-exists flathub \
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists --system flathub \
             https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install -y flathub org.gnome.Sdk//51 org.gnome.Platform//51
+          sudo flatpak install -y --system flathub \
+            org.gnome.Sdk//51 org.gnome.Platform//51
 
       - name: Pin the manifest to this commit
         run: |
