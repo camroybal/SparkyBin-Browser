@@ -540,7 +540,7 @@ ephy_prefs_sidebar_page_init (EphyPrefsSidebarPage *self)
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  self->manager = ephy_shell_get_bookmarks_manager (ephy_shell_get_default ());
+  self->manager = g_object_ref (ephy_shell_get_bookmarks_manager (ephy_shell_get_default ()));
 
   build_palette_group (self);
   rebuild_sections (self);
