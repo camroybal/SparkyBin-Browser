@@ -17,10 +17,6 @@ window.browser.commands = {
     onCommand: new EphyEventListener (),
 };
 
-window.browser.windows = {
-    onRemoved: new EphyEventListener (),
-};
-
 window.browser.tabs = {
     create: function (...args) { return ephy_message ('tabs.create', args); },
     executeScript: function (...args) { return ephy_message ('tabs.executeScript', args); },

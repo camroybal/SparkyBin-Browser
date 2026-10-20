@@ -17,12 +17,17 @@ class EphyEventListener {
         return !!this.#listeners.find(l => l.callback === cb);
     }
 
-    #emit (...data) {
+    /*
+     * The underscore is deliberate: the browser process calls these by
+     * name, in a script it builds, so they cannot be private. See
+     * ephy_web_extension_manager_emit_in_extension_views().
+     */
+    _emit (...data) {
         for (const listener of this.#listeners)
             listener.callback (...data);
     }
 
-    #emit_with_reply (message, sender, message_guid) {
+    _emit_with_reply (message, sender, message_guid) {
         let handled = false;
         const reply_callback = function (reply_message) {
             ephy_message ('runtime._sendMessageReply', [message_guid, reply_message]).catch(error_message => {

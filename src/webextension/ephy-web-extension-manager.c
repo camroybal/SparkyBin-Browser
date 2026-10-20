@@ -288,6 +288,50 @@ ephy_web_extension_manager_scan_directory_async (EphyWebExtensionManager *self,
                                    extension_load_data_new (self));
 }
 
+/*
+ * The type of a resource, from its name.
+ *
+ * The scheme handler has to say what it is serving. Without a type the
+ * browser has nothing to go on, and a background page comes back as text
+ * rather than as a document, which means the scripts in it are never
+ * fetched and never run.
+ */
+static const char *
+mime_type_for_path (const char *path)
+{
+  static const struct {
+    const char *suffix;
+    const char *mime_type;
+  } types[] = {
+    { ".html", "text/html; charset=utf-8" },
+    { ".htm", "text/html; charset=utf-8" },
+    { ".js", "text/javascript; charset=utf-8" },
+    { ".mjs", "text/javascript; charset=utf-8" },
+    { ".css", "text/css; charset=utf-8" },
+    { ".json", "application/json" },
+    { ".webmanifest", "application/manifest+json" },
+    { ".svg", "image/svg+xml" },
+    { ".png", "image/png" },
+    { ".jpg", "image/jpeg" },
+    { ".jpeg", "image/jpeg" },
+    { ".gif", "image/gif" },
+    { ".webp", "image/webp" },
+    { ".ico", "image/vnd.microsoft.icon" },
+    { ".woff", "font/woff" },
+    { ".woff2", "font/woff2" },
+    { ".ttf", "font/ttf" },
+    { ".otf", "font/otf" },
+    { ".wasm", "application/wasm" },
+  };
+
+  for (size_t i = 0; i < G_N_ELEMENTS (types); i++) {
+    if (g_str_has_suffix (path, types[i].suffix))
+      return types[i].mime_type;
+  }
+
+  return "application/octet-stream";
+}
+
 static void
 ephy_webextension_scheme_cb (WebKitURISchemeRequest *request,
                              gpointer                user_data)
@@ -372,7 +416,7 @@ ephy_webextension_scheme_cb (WebKitURISchemeRequest *request,
   /* @data is owned by the extension and may be freed (e.g. by uninstalling the extension) before
    * WebKit has read the stream, so it must be handed a copy it can outlive. */
   stream = g_memory_input_stream_new_from_data (g_memdup2 (data, length), length, g_free);
-  webkit_uri_scheme_request_finish (request, stream, length, NULL);
+  webkit_uri_scheme_request_finish (request, stream, length, mime_type_for_path (path));
 }
 
 static void
@@ -1741,11 +1785,6 @@ application_window_added_timeout_cb (gpointer user_data)
   window_json = ephy_web_extension_api_windows_create_window_json (data->web_extension, window);
   ephy_web_extension_manager_emit_in_extension_views (manager, data->web_extension, "windows.onCreated", window_json);
 
-  tab_view = ephy_window_get_tab_view (window);
-  adw_tab_view = ephy_tab_view_get_tab_view (tab_view);
-  g_signal_connect (G_OBJECT (adw_tab_view), "page-attached", G_CALLBACK (on_page_attached), data->web_extension);
-  g_signal_connect (G_OBJECT (adw_tab_view), "page-detached", G_CALLBACK (on_page_detached), data->web_extension);
-
   return G_SOURCE_REMOVE;
 }
 
@@ -1762,13 +1801,27 @@ application_window_added_cb (EphyShell        *shell,
                              EphyWindow       *window,
                              EphyWebExtension *web_extension)
 {
+  EphyTabView *tab_view;
+  AdwTabView *adw_tab_view;
+
+  /* The tab signals are connected straight away. Connecting them later, as
+   * the window event below used to be, meant a tab opened in that first
+   * second was never reported to the extension. */
+  tab_view = ephy_window_get_tab_view (window);
+  adw_tab_view = ephy_tab_view_get_tab_view (tab_view);
+  g_signal_connect (G_OBJECT (adw_tab_view), "page-attached", G_CALLBACK (on_page_attached), web_extension);
+  g_signal_connect (G_OBJECT (adw_tab_view), "page-detached", G_CALLBACK (on_page_detached), web_extension);
+
   /* At this point the EphyWindow has no EphyEmbed child so we can't get information from it.
    * We also can't really know ahead of time if multiple tabs are opening so simply adding a delay
    * tends to give accurate results. */
-  WindowAddedCallbackData *data = g_new (WindowAddedCallbackData, 1);
-  data->window_id = ephy_window_get_uid (window);
-  data->web_extension = g_object_ref (web_extension);
-  g_timeout_add_seconds_full (G_PRIORITY_DEFAULT_IDLE, 1, application_window_added_timeout_cb, data, window_added_callback_data_free);
+  {
+    WindowAddedCallbackData *data = g_new (WindowAddedCallbackData, 1);
+
+    data->window_id = ephy_window_get_uid (window);
+    data->web_extension = g_object_ref (web_extension);
+    g_timeout_add_seconds_full (G_PRIORITY_DEFAULT_IDLE, 1, application_window_added_timeout_cb, data, window_added_callback_data_free);
+  }
 }
 
 static void
