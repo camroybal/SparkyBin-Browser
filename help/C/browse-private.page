@@ -68,7 +68,7 @@
   <p>You can distinguish private browsing from normal browsing by the
   watermark for the incognito window:</p>
 
-  <media type="image" mime="image/png" src="media/epiphany-private-3-36.png">
+  <media type="image" mime="image/png" src="media/sparkybin-browser-private.png">
     <!--This is the alt text, as read out by screen readers and if the image is
     missing. It also describes how to re-create the image.-->
     <p>Screenshot showing a private browsing window with no opened tabs.</p>

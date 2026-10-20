@@ -27,7 +27,7 @@
 
   <p><app>SparkyBin Browser</app> is based on GNOME Web (Epiphany).</p>
 
-  <media type="image" mime="image/png" src="media/epiphany-plain-3-36.png">
+  <media type="image" mime="image/png" src="media/sparkybin-browser.png">
     <!--This is the alt text, as read out by screen readers and if the image is
     missing. It also describes how to re-create the image.-->
     <p>Fullscreen screenshot of SparkyBin Browser with a wiki page open in the

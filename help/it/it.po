@@ -141,8 +141,8 @@ msgstr ""
 #: C/introduction.page:31
 msgctxt "_"
 msgid ""
-"external ref='media/epiphany-plain-3-36.png' "
-"md5='d70ce310b95542f80f3ebd1def25c670'"
+"external ref='media/sparkybin-browser.png' "
+"md5='cefe5ae69ecb1a1970d2159a7e73e663'"
 msgstr "Immagine tradotta. MD5 del file tradotto: '2923f0ac8efc31dd322e960e4c0b849e'"
 
 #. (itstool) path: media/p
@@ -283,8 +283,8 @@ msgstr ""
 #: C/browse-private.page:71
 msgctxt "_"
 msgid ""
-"external ref='media/epiphany-private-3-36.png' "
-"md5='a5f3c9ea2cb418bab7bdbb8a9de9691e'"
+"external ref='media/sparkybin-browser-private.png' "
+"md5='c78eefb350ef989c37f4f946eb8d95ee'"
 msgstr "Immagine tradotta. MD5 del file tradotto: 'e8c361b3f42a2f2f11acf2ed402ac2aa'"
 
 #. (itstool) path: media/p

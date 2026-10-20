@@ -27,8 +27,8 @@ help_files = [
 ]
 
 help_media = [
-  'media/epiphany-plain-3-36.png',
-  'media/epiphany-private-3-36.png',
+  'media/sparkybin-browser.png',
+  'media/sparkybin-browser-private.png',
   'media/com.sparkybin.Browser.svg'
 ]
 

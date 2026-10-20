@@ -143,11 +143,11 @@ msgstr ""
 #: C/introduction.page:31
 msgctxt "_"
 msgid ""
-"external ref='media/epiphany-plain-3-36.png' "
-"md5='d70ce310b95542f80f3ebd1def25c670'"
+"external ref='media/sparkybin-browser.png' "
+"md5='cefe5ae69ecb1a1970d2159a7e73e663'"
 msgstr ""
-"external ref='media/epiphany-plain-3-36.png' "
-"md5='d70ce310b95542f80f3ebd1def25c670'"
+"external ref='media/sparkybin-browser.png' "
+"md5='cefe5ae69ecb1a1970d2159a7e73e663'"
 
 #. (itstool) path: media/p
 #: C/introduction.page:34
@@ -282,11 +282,11 @@ msgstr ""
 #: C/browse-private.page:71
 msgctxt "_"
 msgid ""
-"external ref='media/epiphany-private-3-36.png' "
-"md5='a5f3c9ea2cb418bab7bdbb8a9de9691e'"
+"external ref='media/sparkybin-browser-private.png' "
+"md5='c78eefb350ef989c37f4f946eb8d95ee'"
 msgstr ""
-"external ref='media/epiphany-private-3-36.png' "
-"md5='a5f3c9ea2cb418bab7bdbb8a9de9691e'"
+"external ref='media/sparkybin-browser-private.png' "
+"md5='c78eefb350ef989c37f4f946eb8d95ee'"
 
 #. (itstool) path: media/p
 #: C/browse-private.page:74

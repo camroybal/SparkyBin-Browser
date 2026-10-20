@@ -142,7 +142,7 @@ msgstr "<app>Web</app> ist die vormals als <app>Epiphany</app> bekannte Anwendun
 #. whatever you like once you have updated your copy of the file.
 #: C/introduction.page:31
 msgctxt "_"
-msgid "external ref='media/epiphany-plain-3-36.png' md5='d70ce310b95542f80f3ebd1def25c670'"
+msgid "external ref='media/sparkybin-browser.png' md5='cefe5ae69ecb1a1970d2159a7e73e663'"
 msgstr "ok'"
 
 #. (itstool) path: media/p
@@ -264,7 +264,7 @@ msgstr ""
 #. whatever you like once you have updated your copy of the file.
 #: C/browse-private.page:71
 msgctxt "_"
-msgid "external ref='media/epiphany-private-3-36.png' md5='a5f3c9ea2cb418bab7bdbb8a9de9691e'"
+msgid "external ref='media/sparkybin-browser-private.png' md5='c78eefb350ef989c37f4f946eb8d95ee'"
 msgstr "ok'"
 
 #. (itstool) path: media/p
