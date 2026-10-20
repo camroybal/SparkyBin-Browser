@@ -6,7 +6,6 @@
     "command" : "sparkybin-browser",
     "finish-args" : [
         "--device=dri",
-        "--device=input",
         "--filesystem=xdg-download",
         "--share=ipc",
         "--share=network",
