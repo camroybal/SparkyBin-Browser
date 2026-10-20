@@ -40,6 +40,7 @@ G_BEGIN_DECLS
 char*    ephy_embed_utils_link_message_parse                    (const char *message);
 gboolean ephy_embed_utils_address_has_web_scheme                (const char *address);
 gboolean ephy_embed_utils_address_is_existing_absolute_filename (const char *address);
+gboolean ephy_embed_utils_address_is_own_scheme                (const char *address);
 gboolean ephy_embed_utils_address_is_valid                      (const char *address);
 char*    ephy_embed_utils_normalize_address                     (const char *address);
 char *   ephy_embed_utils_autosearch_address                    (const char *search_key);

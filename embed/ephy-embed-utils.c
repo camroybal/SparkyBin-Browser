@@ -241,17 +241,58 @@ ephy_embed_utils_address_is_valid (const char *address)
   scheme = g_uri_parse_scheme (address);
 
   if (scheme) {
+    /* The schemes the browser handles itself are not in the desktop file
+     * database, but they are perfectly good addresses. An extension opening
+     * its own options page with tabs.create() would otherwise fail an
+     * assertion and take the browser down. */
     info = g_app_info_get_default_for_uri_scheme (scheme);
     g_free (scheme);
   }
 
   retval = info ||
+           ephy_embed_utils_address_is_own_scheme (address) ||
            ephy_embed_utils_address_is_existing_absolute_filename (address) ||
            g_regex_match (get_non_search_regex (), address, 0, NULL) ||
            is_public_domain (address) ||
            is_host_with_port (address);
 
   g_clear_object (&info);
+
+  return retval;
+}
+
+/**
+ * ephy_embed_utils_address_is_own_scheme:
+ * @address: (nullable): an address
+ *
+ * Whether the address is one of the schemes the browser handles itself.
+ *
+ * Returns: %TRUE if it is
+ */
+gboolean
+ephy_embed_utils_address_is_own_scheme (const char *address)
+{
+  static const char * const own_schemes[] = {
+    "ephy-webextension", EPHY_READER_SCHEME
+  };
+  char *scheme;
+  gboolean retval = FALSE;
+
+  if (!address)
+    return FALSE;
+
+  scheme = g_uri_parse_scheme (address);
+  if (!scheme)
+    return FALSE;
+
+  for (guint i = 0; i < G_N_ELEMENTS (own_schemes); i++) {
+    if (g_strcmp0 (scheme, own_schemes[i]) == 0) {
+      retval = TRUE;
+      break;
+    }
+  }
+
+  g_free (scheme);
 
   return retval;
 }

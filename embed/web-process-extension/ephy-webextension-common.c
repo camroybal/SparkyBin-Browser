@@ -265,6 +265,22 @@ ephy_webextension_install_common_apis (WebKitWebPage *page,
   js_browser = jsc_context_get_value (js_context, "browser");
   g_assert (jsc_value_is_object (js_browser));
 
+  /* runtime.id
+   *
+   * The polyfill that most extensions load refuses to run at all without
+   * it, and says so with "This script should only be loaded in a browser
+   * extension." The id of an extension is its GUID.
+   */
+  {
+    g_autoptr (JSCValue) js_runtime = jsc_value_object_get_property (js_browser, "runtime");
+
+    if (jsc_value_is_object (js_runtime)) {
+      g_autoptr (JSCValue) js_id = jsc_value_new_string (js_context, guid);
+
+      jsc_value_object_set_property (js_runtime, "id", js_id);
+    }
+  }
+
   /* i18n */
   js_i18n = jsc_value_new_object (js_context, NULL, NULL);
   jsc_value_object_set_property (js_browser, "i18n", js_i18n);
