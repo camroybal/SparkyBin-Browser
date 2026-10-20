@@ -308,18 +308,21 @@ quietly.
 ### P2 — Website
 
 Done, in `camroybal/SparkyBin-site`. Astro, static, deployed to GitHub
-Pages by a workflow on push.
+Pages by a workflow on push, and served from <https://sparkybin.com> over
+HTTPS with a certificate GitHub issued for the domain.
 
 - [x] Astro scaffold, GitHub Pages, deploy workflow
 - [x] Home, download, source, about and 404 pages
 - [x] The channel table from 2, wired to the releases page
 - [x] Fonts, palette, light and dark, motion
-- [x] The wordmark and the icon. The site uses a text wordmark so that the
-      design does not have to be redone when there is a real icon.
+- [x] A theme toggle, a sitemap, a robots file, and the metadata for sharing
+- [x] The wordmark and the icon. The site uses the real mark.
 - [x] A dark screenshot, for the dark version of the page.
 - [x] A product list in `src/lib/products.ts`, so a second project under the
       SparkyBin name has somewhere to appear. The site is the browser's for
       now, and it moves under a slug when there is a second one.
+- [ ] Point the domain at the site rather than the GitHub Pages URL, so
+      there is one address for the project.
 
 ### P3 — Work on the browser itself
 
@@ -329,11 +332,19 @@ Pages by a workflow on push.
       preferences page. The design note is in `docs/sidebar.md`, which also
       has what is still open: drag and drop for the sections, whether the
       bar stays a section, and whether it should be open by default.
-- [ ] **Performance and stability.** A shortlist and a way to measure are in
+- [x] **Performance and stability.** A shortlist and a way to measure are in
       `docs/performance.md`, and `tools/measure.sh` collects the numbers.
-      The first item on the list is a stability fix rather than a performance
-      one: an assertion in the renderer that would take every tab in a web
-      process down with it.
+      The first item was a stability fix rather than a performance one: an
+      assertion in the renderer that would take every tab in a web process
+      down with it. The second, third and fourth turned out to be bigger:
+      the extension API was never delivered, the extension's own files were
+      served without a type, and a tab opened in the first second of a
+      window was never reported. All three are fixed and all three are
+      broken upstream too.
+- [ ] The last item on the list: an object is unreffed at shutdown that is
+      not an object. It comes from the table of background views taking a
+      pointer to a widget without taking a reference. It is only a warning,
+      and the browser exits cleanly, but it should be fixed.
 - [ ] WebExtension gaps, in rough order of how much they matter:
       `storage.onChanged` is missing and `storage` writes block the UI
       thread; Manifest V3 is unsupported; `emit_in_tab_with_reply()` can hang
