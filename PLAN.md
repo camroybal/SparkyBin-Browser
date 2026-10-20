@@ -351,6 +351,11 @@ Pages by a workflow on push.
 ### P4 — Housekeeping
 
 - [x] Reword the eight verbose commits.
+- [ ] **Remove the certificate watcher from the site repository.**
+      `SparkyBin-site/tools/wait-for-https.sh` exists only until GitHub
+      issues the certificate for sparkybin.com and the HTTPS redirect is
+      turned on. It is a one-shot tool, not something to keep. Check the
+      Pages settings first: `https_enforced` should be true.
 - [ ] A pull request template and an issue template
 - [x] `NEWS` mentions that the fork's changes are recorded in `NOTICE`
 - [x] `data/generate-release-notes` handles the fork's version format
