@@ -72,5 +72,8 @@ jobs:
           mkdir -p "$XDG_RUNTIME_DIR"
           chmod 700 "$XDG_RUNTIME_DIR"
           export LANG=C.UTF-8 LC_ALL=C.UTF-8 GDK_BACKEND=x11
+          # WebKit's sandbox needs namespaces that a container on a hosted
+          # runner does not allow. The browser still ships with it on.
+          export WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
           dbus-run-session -- xvfb-run -a meson test -C build \
             --no-suite environmental --print-errorlogs --no-rebuild
