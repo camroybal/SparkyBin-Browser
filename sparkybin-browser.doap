@@ -22,7 +22,10 @@
   <maintainer>
     <foaf:Person>
       <foaf:name>SparkyBin</foaf:name>
-      <foaf:mbox rdf:resource="mailto:sparkybin@example.com" />
+      <foaf:account>
+        <foaf:accountServiceHomepage rdf:resource="https://github.com/camroybal" />
+        <foaf:accountName>camroybal</foaf:accountName>
+      </foaf:account>
     </foaf:Person>
   </maintainer>
 </Project>

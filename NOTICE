@@ -84,10 +84,10 @@ Placeholders to review before release
 -------------------------------------
 
 Project URLs (homepage, bug tracker, VCS, and Flatpak source) point at the fork
-at https://github.com/camroybal/SparkyBin-Browser. The following are still
-placeholders and should be reviewed:
+at https://github.com/camroybal/SparkyBin-Browser. There is no contact
+email address; the issue tracker is the way to reach the project. The
+following are still placeholders and should be reviewed:
 
-  * Contact email (`sparkybin@example.com`).
   * Application icon artwork in `data/icons/` and `help/C/media/`.
   * Help page screenshots (`help/C/media/epiphany-*.png`) still depict the
     upstream user interface.

@@ -286,7 +286,8 @@ quietly.
       files still show the upstream interface.
 - [ ] The icon is placeholder artwork, in the app, in the help and in the
       AppStream metadata.
-- [ ] The contact address is `sparkybin@example.com`.
+- [x] The contact address is gone. There is no email; the issue tracker is
+      the way to reach the project, and the metadata says so.
 - [x] The README does not say where the bug tracker is.
 
 ### P1 — Needed before a release
