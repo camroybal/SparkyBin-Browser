@@ -7,11 +7,11 @@ Status as of 2026-10-20.
 
 Decisions taken:
 
-- Releases so far are **0.1** and **0.2**. 1.0 waits until there is a stable
-  channel on Flathub; the icon and the screenshots are done.
+- Releases so far are **0.1** and **0.2**. 1.0 waits for a stable channel of
+  our own; the icon and the screenshots are done.
 - The website lives in its own repository, `camroybal/SparkyBin-site`.
-- People install from **GitHub Releases** to begin with. Flathub is the goal
-  later, not the starting point.
+- People install from **GitHub Releases**. A flatpak repository of our own
+  comes next. Flathub is a long way off, if it happens at all.
 - The eight verbose commits from 2026-10-15 have been reworded.
 
 ---
@@ -38,8 +38,9 @@ What exists:
 
 What does not exist yet:
 
-- A stable channel on Flathub, and the development history it asks for. The
-  manifest is ready; the verification token is not.
+- A flatpak repository of our own, and the infrastructure for it: a signing
+  key, somewhere to serve the OSTree tree, and something that exports and
+  signs each release. Until then updates mean downloading a bundle by hand.
 - The sidebar as a tab strip. The sidebar can show the open tabs now, but the
   tab bar is still the tab bar, and whether one replaces the other is open.
 - A cache setting. WebKit's default is the one that uses the most memory,
@@ -54,7 +55,7 @@ release channels onto them rather than inventing a new mechanism.
 
 | Channel | App ID | Built from | WebKit | Updates | Where it lives |
 |---|---|---|---|---|---|
-| Stable | `com.sparkybin.Browser` | a release tag | GNOME runtime | on release | GitHub Releases, Flathub |
+| Stable | `com.sparkybin.Browser` | a release tag | GNOME runtime | on release | GitHub Releases |
 | Beta / RC | `com.sparkybin.Browser` | an rc tag | GNOME runtime | as needed | GitHub Releases, marked pre-release |
 | Devel | `com.sparkybin.Browser.Devel` | `main` | GNOME runtime | continuous | a flatpak repo |
 | Canary | `com.sparkybin.Browser.Canary` | `main` | WebKit `main` | continuous | a flatpak repo |
@@ -65,7 +66,7 @@ ID. That keeps it to three app IDs and three manifests.
 What each one is for:
 
 - **Stable** is what most people install. It should be boring: one app ID, one
-  flatpak on Flathub, updated a handful of times a year, and built from a tag
+  flatpak repository, updated a handful of times a year, and built from a tag
   that matches the release notes.
 - **Devel** tracks `main` against the WebKit in the GNOME runtime. This is
   what a contributor or an early adopter runs.
@@ -109,13 +110,13 @@ Renaming breaks two things that need updating in the same commit:
    AppStream `<releases>` block, and the script only recognises release
    headers in the GNOME format, so the entry has to match that.
 4. Build the stable flatpak and attach it to a GitHub Release.
-5. Submit to Flathub, or host a flatpak repo ourselves if that is going to
-   take a while.
+5. Export it into our own flatpak repository, once there is one.
 
-There is no `.github/` directory and no GitHub Actions workflow yet. The
-existing CI is GitLab CI inherited from GNOME, pointed at nightly.gnome.org.
-A release workflow that runs on a tag and publishes to GitHub Releases is the
-missing piece, and it is the piece the website depends on.
+`.github/workflows/release.yml` builds the flatpak on a tag and attaches it
+to a GitHub Release. `.github/workflows/ci.yml` builds and tests every push.
+The CI inherited from GNOME is still in the tree, pointed at
+nightly.gnome.org. The website reads the releases API when it builds, so the
+download page picks up a tag on the next deploy.
 
 One asymmetry worth knowing before choosing where to run what. The existing
 `canary` job builds WebKit from `main` and takes up to four hours, on a runner
@@ -135,36 +136,29 @@ GitHub Releases is a file attachment, not a service to run. A
 with one command, and the runtime it needs is the GNOME runtime that is
 already on their system or that they get from Flathub.
 
-The rolling channels can be served from GitHub Pages as well. Flatpak
-repositories work over plain HTTP, so a flatpak repo directory published to
-Pages is a working `flathub --user remote-add` target, with no server to
-administer. That is a reasonable way to get a Devel and a Canary channel
-running before Flathub is an option, and it can be moved later.
+The stable channel is served that way today. Updates are manual: download the
+next bundle and install it over the old one, and the profile is kept.
 
-### 2.4 The application ID needs a decision before the first release
+### 2.4 A flatpak repository of our own
 
-Flathub wants the application ID to be `{tld}.{vendor}.{product}`, where the
-domain is one the developer controls and can be verified over HTTPS. It also
-says, in as many words, that the ID should be chosen carefully because
-renaming it later means resubmitting.
+A flatpak repository is an OSTree tree with an index, served over HTTP. It
+does not need a server of its own: a directory published to GitHub Pages is a
+working `flatpak --user remote-add` target. What it does need is a signing
+key, kept out of the repository, and a step in the release job that exports
+the build with `flatpak build-export`, signs the summary with
+`flatpak build-update-repo --gpg-sign`, and publishes the result. The same
+tree can carry the Devel and Canary profiles under their own application IDs.
 
-`com.sparkybin.Browser` is three components and the `sparkybin.*` domains do
-not answer, so there is nothing to verify against. Two ways forward:
+Pages allows a site of 1 GB, which is more than an application this size
+needs; the runtime comes from Flathub either way. Object storage behind a CDN
+is the alternative if Pages runs out, and it costs a little.
 
-- Register a `sparkybin` domain and keep the ID. A `.well-known/
-  org.flathub.VerifiedApps.txt` file on it is all the verification Flathub
-  asks for.
-- Use a code hosting ID instead: `io.github.camroybal.SparkyBinBrowser`.
-  Flathub accepts `io.github.` prefixed IDs with four or more components and
-  verifies them by authenticating with GitHub, so no domain is needed.
-
-The second is free and works today. The first reads better. Either way this
-has to be settled before the first release, because the ID is baked into the
-flatpak application ID, the GSettings schema and the D-Bus names.
-
-The same ID has to be used for the `Devel` and `Canary` profiles, so
-`io.github.camroybal.SparkyBinBrowser.Devel` and
-`io.github.camroybal.SparkyBinBrowser.Canary` follow from it.
+Flathub is not part of this. It wants a development history and a
+verification token, and neither exists yet. If it is attempted later, the
+application ID is already the right shape: `com.sparkybin.Browser` is
+`{tld}.{vendor}.{product}`, the domain is ours, and the `.well-known/
+org.flathub.VerifiedApps.txt` file on the site would be all the verification
+needs. Nothing today depends on that.
 
 ---
 
@@ -314,10 +308,10 @@ quietly.
       the `NEWS` entry and the AppStream `<releases>` block are generated
       from one another, and `data/generate-release-notes --check` says
       whether they agree.
-- [ ] Flathub submission. The manifest is ready, and the domain
-      verification file is in the site repository waiting for the token
-      from the Developer Portal. Flathub also wants a development history,
-      which takes time to build.
+- [ ] A flatpak repository of our own. The release workflow produces a
+      bundle; the repository needs a signing key, somewhere to serve the
+      OSTree tree, and a step that exports and signs each release. Flathub
+      is a later question, and not a near one.
 - [x] Real icon and screenshots. The help screenshots were taken again
       from the browser itself, because the old ones were GNOME Web from
       2020.
