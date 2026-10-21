@@ -3758,6 +3758,20 @@ tab_view_notify_selected_page_cb (EphyWindow *window)
 }
 
 static void
+update_tab_bar_visibility (EphyWindow *window)
+{
+  AdwTabView *view;
+
+  if (!window->tab_bar)
+    return;
+
+  view = ephy_tab_view_get_tab_view (window->tab_view);
+  gtk_widget_set_visible (GTK_WIDGET (window->tab_bar),
+                          adw_tab_view_get_n_pages (view) > 1 ||
+                          adw_tab_view_get_n_pinned_pages (view) > 0);
+}
+
+static void
 tab_view_notify_n_pages_cb (EphyWindow *window)
 {
   int n_pages = ephy_tab_view_get_n_pages (window->tab_view);
@@ -3768,6 +3782,8 @@ tab_view_notify_n_pages_cb (EphyWindow *window)
 
   action = g_action_map_lookup_action (G_ACTION_MAP (action_group), "close");
   g_simple_action_set_enabled (G_SIMPLE_ACTION (action), n_pages > 0);
+
+  update_tab_bar_visibility (window);
 }
 
 static EphyTabView *
@@ -3788,6 +3804,10 @@ setup_tab_view (EphyWindow *window)
                            window,
                            G_CONNECT_AFTER | G_CONNECT_SWAPPED);
   g_signal_connect_object (view, "notify::n-pages",
+                           G_CALLBACK (tab_view_notify_n_pages_cb),
+                           window,
+                           G_CONNECT_AFTER | G_CONNECT_SWAPPED);
+  g_signal_connect_object (view, "notify::n-pinned-pages",
                            G_CALLBACK (tab_view_notify_n_pages_cb),
                            window,
                            G_CONNECT_AFTER | G_CONNECT_SWAPPED);
@@ -4686,6 +4706,7 @@ ephy_window_constructed (GObject *object)
 
   adw_tab_bar_set_view (window->tab_bar, ephy_tab_view_get_tab_view (window->tab_view));
   adw_tab_overview_set_view (ADW_TAB_OVERVIEW (window->overview), ephy_tab_view_get_tab_view (window->tab_view));
+  update_tab_bar_visibility (window);
 
   shell = ephy_shell_get_default ();
   mode = ephy_embed_shell_get_mode (EPHY_EMBED_SHELL (shell));
